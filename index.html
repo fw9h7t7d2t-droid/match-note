@@ -146,6 +146,9 @@ input[type=text],input[type=date],select{width:100%;font:inherit;padding:10px 12
 .record div{background:var(--surface-2);border-radius:10px;padding:10px 4px}
 .record b{display:block;font-size:22px;font-weight:900}
 .record span{font-size:11px;color:var(--text-2);font-weight:700}
+.codebox{font-size:22px;font-weight:900;letter-spacing:.08em;text-align:center;background:var(--surface-2);border-radius:10px;padding:10px;margin:8px 0;font-variant-numeric:tabular-nums}
+.cloud-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
+.cloud-dot.on{background:var(--good)}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--surface);padding:10px 18px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:20}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .note{font-size:12px;color:var(--muted);margin-top:8px}
@@ -381,6 +384,7 @@ table.ptbl input[type=checkbox]{width:18px;height:18px}
 
 <!-- ============ HISTORY ============ -->
 <section class="view" id="v-history">
+  <div class="card" id="cloudCard"></div>
   <div id="historyBody"></div>
   <div class="card">
     <h2>データのバックアップ</h2>
@@ -552,7 +556,7 @@ const undoStack = [];
 const blankS = () => Object.fromEntries(PS.map(x => [x.k, 0]));
 const pState = id => (curP[id] ||= {on:false, s:blankS()});
 const sortedRoster = () => [...roster].sort((a,b) => (POS_ORDER[a.pos]-POS_ORDER[b.pos]) || ((+a.num||99)-(+b.num||99)));
-const saveRoster = () => store.set("sma_roster", roster);
+const saveRoster = () => { store.set("sma_roster", roster); if (typeof cloudPushRoster === "function") cloudPushRoster(); };
 const pLabel = p => `${p.num!==""&&p.num!=null?"#"+p.num+" ":""}${p.name}`;
 
 function renderPChips(){
@@ -1373,7 +1377,7 @@ function renderAnalysis(m){
     const h = store.get("sma_hist", []);
     const i = h.findIndex(x => x.id === m.id);
     if (i >= 0) h[i] = m; else h.unshift(m);
-    store.set("sma_hist", h); toast("履歴に保存しました"); renderHistory();
+    store.set("sma_hist", h); cloudPutMatch(m); toast(cloud.team ? "履歴に保存しました（チームに共有）" : "履歴に保存しました"); renderHistory();
   };
 }
 
@@ -1466,7 +1470,7 @@ $("#historyBody").addEventListener("click", e => {
   if (del) {
     e.stopPropagation();
     if (del.dataset.confirm) {
-      store.set("sma_hist", store.get("sma_hist", []).filter(x => String(x.id) !== del.dataset.del));
+      store.set("sma_hist", store.get("sma_hist", []).filter(x => String(x.id) !== del.dataset.del)); cloudDelMatch(del.dataset.del);
       renderHistory(); toast("削除しました");
     } else { del.dataset.confirm = "1"; del.textContent = "削除?"; del.style.fontSize = "12px"; del.style.color = "var(--bad)"; setTimeout(() => { if (del.isConnected){ delete del.dataset.confirm; del.textContent = "×"; del.style = ""; } }, 2500); }
     return;
@@ -1494,6 +1498,117 @@ $("#analyzeBtn").onclick = () => {
   renderAnalysis(m); go("analysis");
 };
 
+/* ---------- cloud sync (Firebase) ---------- */
+// ↓ Firebaseの設定（ウェブアプリを登録したときに表示される firebaseConfig）をここに入れる
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCXeZ4D0Sm8yHtxWfdaUj2ak1QpXJ1-4iQ",
+  authDomain: "match-note-7ee12.firebaseapp.com",
+  projectId: "match-note-7ee12",
+  storageBucket: "match-note-7ee12.firebasestorage.app",
+  messagingSenderId: "782307080797",
+  appId: "1:782307080797:web:fe4bf711bcf8893e4babb4"
+};
+const FB_VER = "10.12.2";
+const cloud = {ready:false, err:null, db:null, team: store.get("sma_team", null), teamName:"", unsub:[]};
+const loadScript = src => new Promise((res, rej) => { const el = document.createElement("script"); el.src = src; el.onload = res; el.onerror = rej; document.head.appendChild(el); });
+const fmtCode = c => c ? c.replace(/(.{4})(?=.)/g, "$1-") : "";
+const normCode = c => (c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+function newCode(){ const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const a = new Uint32Array(12); crypto.getRandomValues(a); return [...a].map(x => A[x % A.length]).join(""); }
+const teamRef = () => cloud.db.collection("teams").doc(cloud.team);
+async function cloudInit(){
+  if (!FIREBASE_CONFIG) { renderCloudCard(); return; }
+  try {
+    const base = `https://www.gstatic.com/firebasejs/${FB_VER}/`;
+    await loadScript(base + "firebase-app-compat.js");
+    await Promise.all([loadScript(base + "firebase-auth-compat.js"), loadScript(base + "firebase-firestore-compat.js")]);
+    firebase.initializeApp(FIREBASE_CONFIG);
+    cloud.db = firebase.firestore();
+    try { await cloud.db.enablePersistence({synchronizeTabs:true}); } catch(_){}
+    await firebase.auth().signInAnonymously();
+    cloud.ready = true;
+    if (cloud.team) cloudAttach();
+  } catch(e){ cloud.err = "クラウドに接続できませんでした（電波を確認してください）"; console.log(e); }
+  renderCloudCard();
+}
+function cloudDetach(){ cloud.unsub.forEach(f => f()); cloud.unsub = []; }
+function cloudAttach(){
+  cloudDetach();
+  cloud.unsub.push(teamRef().onSnapshot(d => {
+    if (!d.exists) return;
+    const data = d.data(); cloud.teamName = data.name || "";
+    if (data.roster != null && !d.metadata.hasPendingWrites) {
+      try { roster = JSON.parse(data.roster); store.set("sma_roster", roster); renderRoster(); } catch(_){}
+    }
+    renderCloudCard();
+  }, e => { cloud.err = "チームのデータを読めませんでした"; renderCloudCard(); }));
+  cloud.unsub.push(teamRef().collection("matches").onSnapshot(q => {
+    const h = [];
+    q.forEach(d => { try { h.push(JSON.parse(d.data().json)); } catch(_){} });
+    h.sort((a,b) => (b.date||"").localeCompare(a.date||"") || b.id - a.id);
+    store.set("sma_hist", h);
+    if ($("#v-history").classList.contains("active")) renderHistory();
+  }));
+}
+function cloudPushRoster(){
+  if (!cloud.ready || !cloud.team) return;
+  teamRef().set({roster: JSON.stringify(roster), updatedAt: Date.now()}, {merge:true}).catch(() => toast("名簿をクラウドに保存できませんでした"));
+}
+function cloudPutMatch(m){
+  if (!cloud.ready || !cloud.team || !m) return;
+  teamRef().collection("matches").doc(String(m.id)).set({json: JSON.stringify(m), date: m.date || "", opp: m.oppName || "", savedAt: Date.now()})
+    .catch(() => toast("試合をクラウドに保存できませんでした"));
+}
+function cloudDelMatch(id){
+  if (!cloud.ready || !cloud.team) return;
+  teamRef().collection("matches").doc(String(id)).delete().catch(() => {});
+}
+async function cloudCreate(name){
+  const code = newCode();
+  await cloud.db.collection("teams").doc(code).set({name: name || "マイチーム", roster: JSON.stringify(roster), createdAt: Date.now(), updatedAt: Date.now()});
+  cloud.team = code; store.set("sma_team", code);
+  await Promise.all(store.get("sma_hist", []).map(m => teamRef().collection("matches").doc(String(m.id)).set({json: JSON.stringify(m), date: m.date || "", opp: m.oppName || "", savedAt: Date.now()})));
+  cloudAttach();
+}
+async function cloudJoin(raw){
+  const code = normCode(raw);
+  if (code.length !== 12) throw new Error("len");
+  const d = await cloud.db.collection("teams").doc(code).get();
+  if (!d.exists) throw new Error("none");
+  cloud.team = code; store.set("sma_team", code);
+  const remoteRoster = (() => { try { return JSON.parse(d.data().roster || "[]"); } catch(_) { return []; } })();
+  if (!remoteRoster.length && roster.length) cloudPushRoster();
+  // この端末にしかない試合もチームに追加（消えないように）
+  const q = await teamRef().collection("matches").get(), have = new Set(q.docs.map(x => x.id));
+  store.get("sma_hist", []).filter(m => !have.has(String(m.id))).forEach(cloudPutMatch);
+  cloudAttach();
+}
+function renderCloudCard(){
+  const el = $("#cloudCard"); if (!el) return;
+  if (!FIREBASE_CONFIG) { el.innerHTML = `<h2>チームで共有</h2><p style="margin:0;font-size:13px;color:var(--text-2)">クラウド共有はまだ設定されていません。設定すると、機種変更やコーチ同士で記録を共有できます。</p>`; return; }
+  if (cloud.err && !cloud.ready) { el.innerHTML = `<h2>チームで共有</h2><p style="margin:0;font-size:13px;color:var(--bad)">${cloud.err}</p><div class="row-btns" style="margin-top:10px"><button class="btn ghost small" id="cloudRetry">もう一度つなぐ</button></div>`; $("#cloudRetry").onclick = () => { cloud.err = null; renderCloudCard(); cloudInit(); }; return; }
+  if (!cloud.ready) { el.innerHTML = `<h2>チームで共有</h2><p style="margin:0;font-size:13px;color:var(--text-2)">クラウドに接続中…</p>`; return; }
+  if (cloud.team) {
+    el.innerHTML = `<h2><span class="cloud-dot on"></span>チームで共有中${cloud.teamName ? `<span class="tag">${esc(cloud.teamName)}</span>` : ""}</h2>
+      <p style="margin:0;font-size:13px;color:var(--text-2)">選手名簿と保存した試合は、自動でクラウドに保存されます。他のコーチや新しいスマホでは、このチームコードを入れてください。</p>
+      <div class="codebox">${fmtCode(cloud.team)}</div>
+      <div class="row-btns"><button class="btn ghost small" id="codeCopy">コードをコピー</button><button class="btn ghost small" id="cloudLeave">この端末で共有をやめる</button></div>
+      <p class="note">チームコードはパスワードと同じです。チームのコーチ以外には教えないでください。</p>`;
+    $("#codeCopy").onclick = async () => { try { await navigator.clipboard.writeText(fmtCode(cloud.team)); toast("コピーしました"); } catch(_) { toast("コピーできませんでした"); } };
+    $("#cloudLeave").onclick = e => confirmTap(e.target, () => { cloudDetach(); cloud.team = null; store.set("sma_team", null); renderCloudCard(); toast("共有をやめました（この端末の記録は残ります）"); });
+    return;
+  }
+  el.innerHTML = `<h2><span class="cloud-dot"></span>チームで共有</h2>
+    <p style="margin:0 0 10px;font-size:13px;color:var(--text-2)">はじめての人は「チームを作る」。他のコーチが作ったチームに入るとき・機種変更したときは、チームコードを入れて「参加」。</p>
+    <div class="grid2" style="grid-template-columns:1fr auto;margin-bottom:8px"><input type="text" id="teamName" placeholder="チーム名（例：U-12）"><button class="btn ghost small" id="teamCreate">チームを作る</button></div>
+    <div class="grid2" style="grid-template-columns:1fr auto"><input type="text" id="teamCode" placeholder="チームコード（XXXX-XXXX-XXXX）" autocapitalize="characters"><button class="btn ghost small" id="teamJoin">参加</button></div>
+    <p class="note">この端末にある選手名簿と試合の記録は、チームに足し合わせます（消えません）。</p>`;
+  $("#teamCreate").onclick = async e => { e.target.disabled = true; try { await cloudCreate($("#teamName").value.trim()); toast("チームを作りました"); } catch(err){ toast("作れませんでした（電波を確認）"); e.target.disabled = false; } renderCloudCard(); };
+  $("#teamJoin").onclick = async e => { e.target.disabled = true;
+    try { await cloudJoin($("#teamCode").value); toast("チームに参加しました"); }
+    catch(err){ toast(err.message === "len" ? "コードは12文字です" : err.message === "none" ? "そのチームコードは見つかりません" : "参加できませんでした（電波を確認）"); e.target.disabled = false; }
+    renderCloudCard(); };
+}
+
 /* ---------- backup ---------- */
 $("#bkSave").onclick = async () => {
   const data = {app:"soccer-match-analysis", v:1, savedAt:new Date().toISOString(), roster: store.get("sma_roster", []), hist: store.get("sma_hist", [])};
@@ -1518,6 +1633,7 @@ $("#bkLoad").onchange = async e => {
     h.sort((a,b) => (b.date||"").localeCompare(a.date||"") || b.id - a.id);
     store.set("sma_roster", r); store.set("sma_hist", h);
     roster = r; renderRoster(); renderHistory();
+    cloudPushRoster(); (d.hist || []).forEach(cloudPutMatch);
     toast(`復元しました（試合${(d.hist||[]).length}件・選手${(d.roster||[]).length}人）`);
   } catch(err){ toast("このファイルは読み込めませんでした"); }
   e.target.value = "";
@@ -1526,6 +1642,7 @@ $("#bkLoad").onchange = async e => {
 /* ---------- init ---------- */
 const draft = store.get("sma_draft", null);
 if (draft) writeForm(draft); else { $("#date").value = new Date().toISOString().slice(0,10); renderRoster(); }
+cloudInit();
 })();
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 </script>
