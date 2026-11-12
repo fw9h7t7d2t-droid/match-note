@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f5132">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="試合分析">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>サッカー試合分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f3f4f1; --surface:#fcfcfb; --surface-2:#eef0ec; --line:#dcded8;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#7d7c77;
+  --own:#2a78d6; --opp:#eb6834; --s3:#1baf7a;
+  --pitch:#0f5132; --pitch-2:#14663f;
+  --good:#16794a; --good-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fdf1d8; --bad:#b42323; --bad-bg:#fbe5e5;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --bg:#111110; --surface:#1a1a19; --surface-2:#242422; --line:#33332f;
+    --text:#f0efec; --text-2:#c3c2b7; --muted:#8f8e86;
+    --own:#3987e5; --opp:#d95926; --s3:#199e70;
+    --pitch:#0b3d26; --pitch-2:#0f4d30;
+    --good:#5ccf93; --good-bg:#16301f; --warn:#f0b54a; --warn-bg:#33270f; --bad:#f08080; --bad-bg:#3a1717;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans JP",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
+header{background:linear-gradient(135deg,var(--pitch),var(--pitch-2));color:#fff;padding:calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 0 calc(16px + env(safe-area-inset-left));position:sticky;top:0;z-index:10}
+header h1{margin:0 0 12px;font-size:19px;font-weight:900;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+header h1 svg{flex:none}
+nav{display:flex;gap:4px}
+nav button{flex:1;background:transparent;border:0;color:rgba(255,255,255,.7);font:inherit;font-weight:700;font-size:14px;padding:10px 4px 12px;border-bottom:3px solid transparent;cursor:pointer}
+nav button.active{color:#fff;border-bottom-color:#fff}
+main{max-width:760px;margin:0 auto;padding:16px 12px 100px}
+.view{display:none}.view.active{display:block}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.card h2{font-size:16px;margin:0 0 12px;font-weight:900;display:flex;align-items:center;gap:8px}
+.card h2 .tag{font-size:11px;font-weight:700;color:var(--text-2);background:var(--surface-2);padding:2px 8px;border-radius:99px}
+label.f{display:block;font-size:12px;color:var(--text-2);font-weight:700;margin-bottom:4px}
+input[type=text],input[type=date],select{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mb{margin-bottom:10px}
+.scorebox{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;text-align:center}
+.scorebox .team{font-size:12px;font-weight:700;color:var(--text-2)}
+.scorebox .dash{font-size:24px;font-weight:900;color:var(--muted)}
+/* stat rows */
+.stat-head{display:grid;grid-template-columns:1fr 128px 128px;gap:6px;font-size:12px;font-weight:700;color:var(--text-2);padding:0 0 6px;border-bottom:1px solid var(--line)}
+.stat-head span:nth-child(2){color:var(--own);text-align:center}
+.stat-head span:nth-child(3){color:var(--opp);text-align:center}
+.stat-row{display:grid;grid-template-columns:1fr 128px 128px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--surface-2)}
+.stat-row:last-child{border-bottom:0}
+.stat-row .nm{font-size:13.5px;font-weight:500}
+.stat-row .nm small{display:block;font-size:11px;color:var(--muted);font-weight:400;line-height:1.3}
+.step{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.step button{width:38px;height:38px;border:0;background:var(--surface-2);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;flex:none;touch-action:manipulation}
+.step button:active{background:var(--line)}
+.step input{width:100%;min-width:0;border:0;text-align:center;font:inherit;font-weight:700;font-size:16px;background:transparent;color:var(--text);padding:0;-moz-appearance:textfield}
+.step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.step.big button{width:46px;height:52px;font-size:24px}
+.step.big input{font-size:30px;font-weight:900}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--text-2);font:inherit;font-size:13px;padding:6px 12px;border-radius:99px;cursor:pointer}
+.chip.on{background:var(--text);color:var(--surface);border-color:var(--text)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-weight:700;border-radius:12px;border:0;padding:13px 18px;cursor:pointer}
+.btn.primary{background:var(--pitch-2);color:#fff;width:100%;font-size:16px}
+.btn.ghost{background:var(--surface-2);color:var(--text)}
+.btn.small{padding:8px 12px;font-size:13px}
+.actions{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%);z-index:9}
+.actions .inner{max-width:760px;margin:0 auto;display:flex;gap:8px}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap}
+/* analysis */
+.result-hero{background:linear-gradient(135deg,var(--pitch),var(--pitch-2));color:#fff;border-radius:var(--radius);padding:18px 16px;margin-bottom:14px;text-align:center}
+.result-hero .meta{font-size:12px;opacity:.8}
+.result-hero .sc{font-size:46px;font-weight:900;line-height:1.1;margin:6px 0;letter-spacing:.04em}
+.result-hero .names{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;font-weight:700}
+.badge{display:inline-block;font-size:12px;font-weight:900;padding:3px 12px;border-radius:99px;background:#fff;color:var(--pitch)}
+.grade{display:inline-flex;align-items:baseline;gap:4px;margin-top:8px;font-size:13px;opacity:.95}
+.grade b{font-size:22px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.kpi .l{font-size:12px;color:var(--text-2);font-weight:700}
+.kpi .v{font-size:26px;font-weight:900;line-height:1.2}
+.kpi .v small{font-size:13px;font-weight:700;color:var(--text-2)}
+.kpi .d{font-size:12px;color:var(--text-2)}
+.kpi .d .own{color:var(--own);font-weight:700}
+.kpi .d .opp{color:var(--opp);font-weight:700}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--text-2);margin-bottom:10px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.cmp{margin-bottom:12px}
+.cmp .top{display:grid;grid-template-columns:52px 1fr 52px;font-size:13px;align-items:baseline}
+.cmp .top b{font-size:15px}
+.cmp .top .c{text-align:center;color:var(--text-2);font-size:12.5px}
+.cmp .top .r{text-align:right}
+.cmp .bar{display:flex;height:10px;gap:2px;margin-top:3px}
+.cmp .bar div{height:100%}
+.cmp .bar .o{background:var(--own);border-radius:4px 0 0 4px}
+.cmp .bar .p{background:var(--opp);border-radius:0 4px 4px 0}
+.chart-wrap{position:relative;height:300px}
+.chart-wrap.short{height:240px}
+.report p{margin:0 0 10px}
+.report p:last-child{margin:0}
+.item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--surface-2)}
+.item:last-child{border-bottom:0}
+.item .ic{flex:none;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px}
+.ic.bad{background:var(--bad-bg);color:var(--bad)}
+.ic.warn{background:var(--warn-bg);color:var(--warn)}
+.ic.good{background:var(--good-bg);color:var(--good)}
+.item h3{margin:0;font-size:14px;font-weight:700}
+.item p{margin:2px 0 0;font-size:13px;color:var(--text-2)}
+.item .num{font-weight:700;color:var(--text)}
+.sev{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;vertical-align:1px}
+.sev.bad{background:var(--bad-bg);color:var(--bad)}
+.sev.warn{background:var(--warn-bg);color:var(--warn)}
+.plan{counter-reset:p}
+.plan .pi{position:relative;padding:10px 0 10px 40px;border-bottom:1px solid var(--surface-2)}
+.plan .pi:last-child{border-bottom:0}
+.plan .pi::before{counter-increment:p;content:counter(p);position:absolute;left:0;top:10px;width:28px;height:28px;border-radius:50%;background:var(--pitch-2);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:14px}
+.plan h3{margin:0;font-size:14.5px}
+.plan p{margin:2px 0 0;font-size:13px;color:var(--text-2)}
+.drill{background:var(--surface-2);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px}
+.drill b{display:block;font-size:12px;color:var(--text-2)}
+.empty{text-align:center;color:var(--text-2);padding:40px 16px}
+.empty svg{opacity:.5;margin-bottom:8px}
+.hist-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--surface-2);cursor:pointer}
+.hist-item:last-child{border-bottom:0}
+.wdl{flex:none;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:13px}
+.wdl.W{background:var(--good)}.wdl.D{background:var(--muted)}.wdl.L{background:var(--bad)}
+.hist-item .t{flex:1;min-width:0}
+.hist-item .t b{display:block;font-size:14px}
+.hist-item .t span{font-size:12px;color:var(--text-2)}
+.hist-item .del{background:none;border:0;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 8px}
+.record{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.record div{background:var(--surface-2);border-radius:10px;padding:10px 4px}
+.record b{display:block;font-size:22px;font-weight:900}
+.record span{font-size:11px;color:var(--text-2);font-weight:700}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--surface);padding:10px 18px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:20}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.tbl th,table.tbl td{padding:6px 4px;border-bottom:1px solid var(--surface-2);text-align:right}
+table.tbl th:first-child,table.tbl td:first-child{text-align:left}
+details summary{cursor:pointer;font-size:13px;color:var(--text-2);font-weight:700;margin-top:6px}
+/* players input */
+.pchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.pchip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-size:13px;padding:5px 10px 5px 5px;border-radius:99px;cursor:pointer}
+.pchip .no{min-width:26px;height:26px;border-radius:50%;background:var(--surface-2);font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.pchip.played .no{background:var(--own);color:#fff}
+.pchip.sel{border-color:var(--own);box-shadow:0 0 0 2px var(--own) inset;font-weight:700}
+.pchip .pos{font-size:10px;color:var(--muted);font-weight:700}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.act{font:inherit;font-size:13px;font-weight:700;padding:12px 4px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);cursor:pointer;touch-action:manipulation}
+.act:disabled{opacity:.4;cursor:default}
+.act.g{background:var(--pitch-2);color:#fff;border-color:transparent}
+.act:active:not(:disabled){transform:scale(.97)}
+.logbar{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--text-2);min-height:34px}
+.logbar span{flex:1}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px -16px 0;padding:0 16px}
+table.ptbl{border-collapse:collapse;font-size:12.5px;white-space:nowrap}
+table.ptbl th{font-size:11px;color:var(--text-2);font-weight:700;padding:6px 3px;text-align:center;background:var(--surface)}
+table.ptbl td{padding:4px 3px;border-top:1px solid var(--surface-2);text-align:center}
+table.ptbl td:first-child,table.ptbl th:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1;padding-right:8px}
+table.ptbl input[type=number]{width:42px;font:inherit;font-weight:700;text-align:center;border:1px solid var(--line);border-radius:6px;padding:5px 0;background:var(--surface);color:var(--text);-moz-appearance:textfield}
+table.ptbl input[type=checkbox]{width:18px;height:18px}
+.roster-add{display:grid;grid-template-columns:62px 1fr 70px auto;gap:6px;margin-top:10px}
+.roster-add input,.roster-add select{padding:9px 8px}
+.rl{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--surface-2);font-size:14px}
+.rl b{min-width:30px}
+.rl .pos{font-size:11px;color:var(--muted);font-weight:700}
+.rl .rpos{margin-left:auto;width:auto;padding:5px 8px;font-size:13px;border-radius:8px}
+.rl .x{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;font-family:inherit}
+/* players analysis */
+.mvp{display:flex;align-items:center;gap:12px;background:var(--good-bg);border-radius:12px;padding:12px;margin-bottom:12px}
+.mvp .no{width:44px;height:44px;border-radius:50%;background:var(--good);color:#fff;font-weight:900;font-size:18px;display:flex;align-items:center;justify-content:center;flex:none}
+.mvp small{display:block;font-size:11px;font-weight:700;color:var(--good)}
+.mvp b{font-size:16px}
+.mvp .sc{margin-left:auto;font-size:26px;font-weight:900}
+.hl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.hl div{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.hl span{display:block;font-size:11px;color:var(--text-2);font-weight:700}
+.hl b{font-size:13.5px}
+.pr{padding:10px 0;border-bottom:1px solid var(--surface-2)}
+.pr:last-child{border-bottom:0}
+.pr .h{display:grid;grid-template-columns:30px 1fr 44px;gap:8px;align-items:center}
+.pr .h .no{font-weight:900;color:var(--text-2);font-size:13px}
+.pr .h .nm{font-weight:700;font-size:14px}
+.pr .h .nm small{font-size:11px;color:var(--muted);margin-left:4px;font-weight:700}
+.pr .h .rt{font-weight:900;font-size:17px;text-align:right}
+.pr .rb{height:6px;background:var(--surface-2);border-radius:4px;margin:5px 0 4px 38px}
+.pr .rb div{height:100%;background:var(--own);border-radius:4px}
+.pr .ln{font-size:12px;color:var(--text-2);margin-left:38px}
+.pr .cm{font-size:12.5px;margin:3px 0 0 38px}
+.pr .cm .g{color:var(--good);font-weight:700}
+.pr .cm .b{color:var(--bad);font-weight:700}
+.pr .cm .a{color:var(--text-2)}
+.sortbar{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.auto{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2);font-weight:500;margin-top:3px;cursor:pointer;line-height:1.3}
+.auto input{width:15px;height:15px;margin:0;flex:none}
+.step.locked{background:var(--surface-2)}
+.step.locked button{opacity:.3;cursor:default}
+.step.locked input{color:var(--own)}
+.poss-row{background:var(--surface-2);margin:0 -8px;padding:8px;border-radius:10px}
+@media (max-width:420px){
+  .stat-head,.stat-row{grid-template-columns:1fr 112px 112px}
+  .step button{width:32px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 7l4 3-1.5 4.5h-5L8 10z" fill="#fff"/><path d="M12 7V2.5M16 10l4-1.5M14.5 14.5l2.5 4M9.5 14.5l-2.5 4M8 10L4 8.5"/></svg>
+    試合分析ノート
+  </h1>
+  <nav>
+    <button data-tab="input" class="active">データ入力</button>
+    <button data-tab="analysis">分析・戦評</button>
+    <button data-tab="history">履歴・傾向</button>
+  </nav>
+</header>
+
+<main>
+<!-- ============ INPUT ============ -->
+<section class="view active" id="v-input">
+  <div class="card">
+    <h2>試合情報</h2>
+    <div class="grid2 mb">
+      <div><label class="f">試合日</label><input type="date" id="date"></div>
+      <div><label class="f">大会・種別</label><input type="text" id="comp" placeholder="例：リーグ第5節"></div>
+    </div>
+    <div class="grid2 mb">
+      <div><label class="f">自チーム名</label><input type="text" id="ownName" placeholder="自チーム"></div>
+      <div><label class="f">対戦相手</label><input type="text" id="oppName" placeholder="相手チーム"></div>
+    </div>
+    <div class="grid2">
+      <div><label class="f">自チームのシステム</label><select id="ownSys"></select></div>
+      <div><label class="f">相手のシステム</label><select id="oppSys"></select></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>スコア</h2>
+    <div class="scorebox">
+      <div><div class="team" id="lblOwn">自チーム</div><div class="step big"><button data-k="gf" data-d="-1">−</button><input type="number" id="gf" value="0" min="0" inputmode="numeric"><button data-k="gf" data-d="1">＋</button></div></div>
+      <div class="dash">-</div>
+      <div><div class="team" id="lblOpp">相手</div><div class="step big"><button data-k="ga" data-d="-1">−</button><input type="number" id="ga" value="0" min="0" inputmode="numeric"><button data-k="ga" data-d="1">＋</button></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>スタッツ <span class="tag">試合中に＋で記録できます</span></h2>
+    <div class="stat-head"><span>項目</span><span>自チーム</span><span>相手</span></div>
+    <div id="statRows"></div>
+  </div>
+
+  <div class="card" id="playerCard">
+    <h2>選手別記録 <span class="tag">選手を選んでプレーをタップ</span></h2>
+    <div id="pchips" class="pchips"></div>
+    <div class="acts" id="acts"></div>
+    <div class="logbar"><span id="lastLog">選手を選んでください</span><button class="btn ghost small" id="undoBtn" disabled>取り消し</button></div>
+    <p class="note" style="margin-top:0">タップした記録はチームのスタッツにも自動で加算されます。</p>
+    <details id="ptblWrap"><summary>個人スタッツ一覧・直接修正</summary>
+      <div class="scroll"><table class="ptbl" id="ptbl"></table></div>
+      <p class="note">ここで直した数字はチームのスタッツには入りません。合わせたいときは下のボタンを押してください。</p>
+      <button class="btn ghost small" id="syncBtn">個人の合計をチームスタッツに反映</button>
+    </details>
+    <details id="rosterWrap"><summary>選手の登録・編集</summary>
+      <div id="rosterList"></div>
+      <div class="roster-add">
+        <input type="number" id="rNum" placeholder="No." inputmode="numeric">
+        <input type="text" id="rName" placeholder="名前">
+        <select id="rPos"><option>GK</option><option>DF</option><option selected>MF</option><option>FW</option><option>未定</option></select>
+        <button class="btn ghost small" id="rAdd">追加</button>
+      </div>
+      <p class="note">登録した選手は次の試合でもそのまま使えます。ポジションは各選手の右側から変えられます。</p>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>得点パターン</h2>
+    <div class="chips" id="gfPat"></div>
+    <h2 style="margin-top:16px">失点パターン</h2>
+    <div class="chips" id="gaPat"></div>
+    <p class="note">当てはまるものを選ぶと、戦評と練習メニューに反映されます。</p>
+  </div>
+
+  <div class="row-btns" style="margin-bottom:14px">
+    <button class="btn ghost small" id="sampleBtn">サンプルデータを入れる</button>
+    <button class="btn ghost small" id="resetBtn">入力をクリア</button>
+  </div>
+
+  <div class="actions"><div class="inner">
+    <button class="btn primary" id="analyzeBtn">分析する</button>
+  </div></div>
+</section>
+
+<!-- ============ ANALYSIS ============ -->
+<section class="view" id="v-analysis">
+  <div id="analysisBody"><div class="empty">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+    <div>「データ入力」で試合のスタッツを入れて<br>「分析する」を押してください</div>
+  </div></div>
+</section>
+
+<!-- ============ HISTORY ============ -->
+<section class="view" id="v-history">
+  <div id="historyBody"></div>
+  <div class="card">
+    <h2>データのバックアップ</h2>
+    <p style="margin:0 0 10px;font-size:13px;color:var(--text-2)">記録はこのスマホの中だけに保存されています。機種変更や他のコーチへの受け渡しのときは、バックアップファイルを保存して、相手の端末で「復元」してください。</p>
+    <div class="row-btns">
+      <button class="btn ghost small" id="bkSave">バックアップを保存</button>
+      <label class="btn ghost small" style="cursor:pointer">バックアップから復元<input type="file" id="bkLoad" accept=".json,application/json" hidden></label>
+    </div>
+    <p class="note">復元すると、今ある記録に足し合わせます（同じ試合・同じ選手は上書き）。</p>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+/* ---------- master data ---------- */
+const SYSTEMS = {
+  "11人制": ["4-4-2","4-3-3","4-2-3-1","4-1-4-1","3-5-2","3-4-3","5-3-2","4-4-2(ダイヤ)"],
+  "8人制":  ["3-3-1","2-3-2","3-2-2","2-4-1","3-1-3"],
+  "その他": ["不明"]
+};
+const STATS = [
+  {k:"shots", n:"シュート"},
+  {k:"sot", n:"枠内シュート"},
+  {k:"passA", n:"パス本数", s:"試行した数", step:5},
+  {k:"passC", n:"パス成功", step:5},
+  {k:"poss", n:"ボール支配率", pct:true},
+  {k:"assist", n:"アシスト"},
+  {k:"keyP", n:"キーパス", s:"シュートにつながったパス"},
+  {k:"cross", n:"クロス"},
+  {k:"tklA", n:"タックル", s:"仕掛けた数"},
+  {k:"tklW", n:"タックル成功", s:"ボールを奪えた数"},
+  {k:"intc", n:"インターセプト", s:"パスカット"},
+  {k:"lost", n:"ボールロスト", s:"奪われた回数"},
+  {k:"foul", n:"ファール"},
+  {k:"yc", n:"警告（イエロー）"},
+  {k:"ck", n:"コーナーキック"},
+  {k:"off", n:"オフサイド"},
+  {k:"save", n:"GKセーブ"}
+];
+const PATTERNS = ["セットプレー","カウンター","クロス","ミドルシュート","裏への抜け出し","個人突破","ミス絡み","PK"];
+
+/* opponent-system tactical knowledge */
+const VS = {
+  "4-4-2": {weak:"2トップの脇とボランチ2枚の間（ハーフスペース）が空きやすい", plan:"最終ラインを3枚にして2トップに数的優位を作り、ボランチ脇で前を向く。サイドで2対1を作って崩す", def:"2トップへの縦パスを狙ってインターセプト。サイドハーフの背後をケアする"},
+  "4-3-3": {weak:"ウイングが高い位置を取るのでサイドバックの背後、アンカー脇が弱点", plan:"アンカーの両脇に人を立たせて縦パスを入れる。奪ったらウイングの背後（SBの裏）へ素早く運ぶ", def:"相手ウイングへの対応を2人で。アンカーを1人で見てビルドアップを詰まらせる"},
+  "4-2-3-1": {weak:"トップ下とボランチの距離が開くと中央が空き、1トップ脇でボールを持てる", plan:"1トップの脇からCBが持ち運んで前進。ボランチを引き出してから裏・間を使う", def:"トップ下を自由にさせない。マークの受け渡しをはっきりさせる"},
+  "4-1-4-1": {weak:"アンカー1枚の両脇と、1トップ脇からの持ち運びに弱い", plan:"CBが持ち運んでインサイドハーフを釣り出し、空いた間へ縦パス", def:"中盤5枚の外側（サイド）に追い込んで奪う"},
+  "3-5-2": {weak:"ウイングバックの背後と、3バックの脇のスペース", plan:"素早いサイドチェンジでウイングバックを走らせ、3バックの脇を突く。2対1を作りやすい", def:"中盤の数的不利に注意。2トップへのロングボールのセカンド回収を徹底"},
+  "3-4-3": {weak:"ボランチ2枚の脇とウイングバックの背後", plan:"中盤で数的優位を作り、ボランチ脇から前を向く。サイド深くを取ってからクロス・折り返し", def:"3トップに同数で対応せず、ラインを揃えて裏を消す"},
+  "5-3-2": {weak:"守備は固いが中盤3枚の横スライドが遅れやすい", plan:"大きなサイドチェンジで中盤を横に揺さぶり、ミドルシュートとセカンドボールを狙う。焦らず回す", def:"カウンターに備えて常に2〜3人を残すリスク管理"},
+  "4-4-2(ダイヤ)": {weak:"中央に人が多い分、サイドの幅が薄い", plan:"サイドバック・ウイングで幅を取り、サイドで数的優位を作ってクロス", def:"中央の縦パスを閉じ、外へ誘導する"},
+  "3-3-1": {weak:"1トップ1枚のため、3バックの両脇からの持ち運びが効く。中盤3枚の背後も空きやすい", plan:"GK・DFからつなぎ、サイドのDFが持ち運んで中盤を引き出す。トップへのくさびから3人目の動き", def:"中盤3枚に同数でプレスをかけ、トップへのボールを狙う"},
+  "2-3-2": {weak:"DF2枚なので、サイドの背後と2トップ間への裏抜けに弱い", plan:"FWがDFの間・脇へ抜け出し、早めのスルーパスで勝負。サイドから2対1", def:"相手2トップに対して数的同数にならないよう、中盤が1枚下りる"},
+  "3-2-2": {weak:"中盤2枚の脇が広く空く", plan:"中盤2枚の脇で受けて前を向き、FWとのワンツーで崩す", def:"2トップへの縦パスを中盤とDFで挟む"},
+  "2-4-1": {weak:"DF2枚の脇・背後。サイドハーフが上がった裏", plan:"奪ったら素早くサイドハーフの背後へ。1対1で仕掛けられる選手を走らせる", def:"中盤4枚の横パスを狙ってショートカウンター"},
+  "3-1-3": {weak:"アンカー1枚の両脇", plan:"アンカーの脇にポジションを取り、縦パス→前を向く。3トップの背後のDFが持ち運ぶ", def:"3トップのサイドを2人で対応し、中央は締める"},
+  "不明": {weak:"相手の並びを試合の序盤で確認しよう", plan:"立ち上がり10分で相手の並びと狙いを整理し、ハーフタイムで修正する", def:"ラインを揃え、ボールホルダーへの最初のアプローチを速く"}
+};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = (a,b) => b > 0 ? a / b * 100 : 0;
+const r0 = n => Math.round(n);
+const clamp = (n,a=0,b=100) => Math.max(a, Math.min(b, n));
+const share = (a,b) => (a + b) > 0 ? a / (a + b) * 100 : 50;
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 1800); }
+function confirmTap(btn, fn){
+  if (btn.dataset.confirm) { fn(); return; }
+  btn.dataset.confirm = "1"; const old = btn.textContent; btn.textContent = "削除?"; btn.style.fontSize = "12px"; btn.style.color = "var(--bad)";
+  setTimeout(() => { if (btn.isConnected){ delete btn.dataset.confirm; btn.textContent = old; btn.style.fontSize = ""; btn.style.color = ""; } }, 2500);
+}
+
+/* ---------- players ---------- */
+const PS = [
+  {k:"min",n:"出場分"},{k:"goal",n:"得点"},{k:"assist",n:"アシスト"},{k:"shot",n:"シュート"},{k:"sot",n:"枠内"},
+  {k:"keyP",n:"キーパス"},{k:"tklA",n:"タックル"},{k:"tklW",n:"成功"},{k:"intc",n:"カット"},{k:"lost",n:"ロスト"},
+  {k:"foul",n:"ファール"},{k:"yc",n:"警告"},{k:"save",n:"セーブ"}
+];
+const ACTIONS = [
+  {id:"goal",  n:"⚽ ゴール",    cls:"g", p:{goal:1,shot:1,sot:1}, t:{gf:1,o_shots:1,o_sot:1}},
+  {id:"sot",   n:"枠内シュート", p:{shot:1,sot:1}, t:{o_shots:1,o_sot:1}},
+  {id:"off",   n:"枠外シュート", p:{shot:1}, t:{o_shots:1}},
+  {id:"assist",n:"アシスト",     p:{assist:1,keyP:1}, t:{o_assist:1,o_keyP:1}},
+  {id:"keyP",  n:"キーパス",     p:{keyP:1}, t:{o_keyP:1}},
+  {id:"tklW",  n:"タックル成功", p:{tklA:1,tklW:1}, t:{o_tklA:1,o_tklW:1}},
+  {id:"tklL",  n:"タックル失敗", p:{tklA:1}, t:{o_tklA:1}},
+  {id:"intc",  n:"パスカット",   p:{intc:1}, t:{o_intc:1}},
+  {id:"lost",  n:"ロスト",       p:{lost:1}, t:{o_lost:1}},
+  {id:"foul",  n:"ファール",     p:{foul:1}, t:{o_foul:1}},
+  {id:"yc",    n:"警告",         p:{yc:1}, t:{o_yc:1}},
+  {id:"save",  n:"GKセーブ",     p:{save:1}, t:{o_save:1}}
+];
+const POS_ORDER = {GK:0,DF:1,MF:2,FW:3,"未定":4};
+const CLUB_ROSTER = [];   // 公開版には名簿を入れない（バックアップファイルから復元）
+function importClubRoster(){
+  let n = 0;
+  CLUB_ROSTER.forEach(([num, name]) => {
+    if (roster.some(r => r.name === name)) return;
+    roster.push({id:"c_" + num + "_" + Date.now().toString(36) + n, num, name, pos:"未定"}); n++;
+  });
+  return n;
+}
+let roster = store.get("sma_roster", null);
+if (!roster || roster.every(r => String(r.id).startsWith("s_"))) {   // 未登録 or サンプル選手だけ → クラブ名簿に置き換え
+  roster = []; importClubRoster(); store.set("sma_roster", roster);
+}
+let curP = {};            // rosterId -> {on, s}
+let selP = null;
+const undoStack = [];
+const blankS = () => Object.fromEntries(PS.map(x => [x.k, 0]));
+const pState = id => (curP[id] ||= {on:false, s:blankS()});
+const sortedRoster = () => [...roster].sort((a,b) => (POS_ORDER[a.pos]-POS_ORDER[b.pos]) || ((+a.num||99)-(+b.num||99)));
+const saveRoster = () => store.set("sma_roster", roster);
+const pLabel = p => `${p.num!==""&&p.num!=null?"#"+p.num+" ":""}${p.name}`;
+
+function renderPChips(){
+  const el = $("#pchips");
+  if (!roster.length) { el.innerHTML = `<p class="note" style="margin:0">下の「選手の登録・編集」から選手を登録するか、「履歴・傾向」タブの一番下の「バックアップから復元」で選手名簿を読み込んでください。</p>`; }
+  else el.innerHTML = sortedRoster().map(r => {
+    const st = curP[r.id];
+    return `<button class="pchip${st?.on?" played":""}${selP===r.id?" sel":""}" data-pid="${r.id}"><span class="no">${esc(r.num??"")}</span>${esc(r.name)}${r.pos!=="未定"?`<span class="pos">${r.pos}</span>`:""}</button>`;
+  }).join("");
+  $("#acts").innerHTML = ACTIONS.map(a => `<button class="act ${a.cls||""}" data-act="${a.id}"${selP?"":" disabled"}>${a.n}</button>`).join("");
+}
+function renderPtbl(){
+  const rows = sortedRoster();
+  $("#ptbl").innerHTML = rows.length ? `<tr><th>選手</th><th>出場</th>${PS.map(x => `<th>${x.n}</th>`).join("")}</tr>` +
+    rows.map(r => { const st = curP[r.id] || {on:false, s:blankS()};
+      return `<tr><td><b>${esc(r.num??"")}</b> ${esc(r.name)}</td><td><input type="checkbox" data-on="${r.id}"${st.on?" checked":""}></td>${PS.map(x => `<td><input type="number" min="0" inputmode="numeric" data-pid="${r.id}" data-k="${x.k}" value="${st.s[x.k]||0}"></td>`).join("")}</tr>`; }).join("")
+    : `<tr><td style="color:var(--text-2)">選手が登録されていません</td></tr>`;
+}
+function renderRosterList(){
+  $("#rosterList").innerHTML = sortedRoster().map(r => `<div class="rl"><b>${esc(r.num??"")}</b>${esc(r.name)}<select class="rpos" data-rpos="${r.id}">${Object.keys(POS_ORDER).map(p => `<option${p===r.pos?" selected":""}>${p}</option>`).join("")}</select><button class="x" data-rdel="${r.id}" aria-label="削除">×</button></div>`).join("");
+}
+function renderRoster(){ renderPChips(); renderPtbl(); renderRosterList(); }
+
+$("#pchips").addEventListener("click", e => {
+  const c = e.target.closest(".pchip"); if (!c) return;
+  selP = selP === c.dataset.pid ? null : c.dataset.pid;
+  const r = roster.find(x => x.id === selP);
+  $("#lastLog").textContent = r ? `${pLabel(r)} を選択中` : "選手を選んでください";
+  renderPChips();
+});
+function bumpTeam(t, sign){
+  for (const [k, v] of Object.entries(t)) { const el = document.getElementById(k); if (el) el.value = Math.max(0, (+el.value||0) + v*sign); }
+}
+$("#acts").addEventListener("click", e => {
+  const b = e.target.closest(".act"); if (!b || !selP) return;
+  const a = ACTIONS.find(x => x.id === b.dataset.act), st = pState(selP), r = roster.find(x => x.id === selP);
+  st.on = true;
+  for (const [k, v] of Object.entries(a.p)) st.s[k] += v;
+  bumpTeam(a.t, 1);
+  undoStack.push({pid:selP, a});
+  $("#lastLog").textContent = `${pLabel(r)}：${a.n.replace("⚽ ","")} を記録`;
+  $("#undoBtn").disabled = false;
+  if (navigator.vibrate) try { navigator.vibrate(15); } catch(_){}
+  renderPChips(); renderPtbl(); saveDraft();
+});
+$("#undoBtn").onclick = () => {
+  const u = undoStack.pop(); if (!u) return;
+  const st = pState(u.pid), r = roster.find(x => x.id === u.pid);
+  for (const [k, v] of Object.entries(u.a.p)) st.s[k] = Math.max(0, st.s[k] - v);
+  bumpTeam(u.a.t, -1);
+  $("#lastLog").textContent = `取り消し：${r?pLabel(r):""} ${u.a.n.replace("⚽ ","")}`;
+  $("#undoBtn").disabled = !undoStack.length;
+  renderPChips(); renderPtbl(); saveDraft();
+};
+$("#ptbl").addEventListener("input", e => {
+  const t = e.target;
+  if (t.dataset.on) { pState(t.dataset.on).on = t.checked; renderPChips(); return; }
+  if (t.dataset.pid) {
+    const st = pState(t.dataset.pid); st.s[t.dataset.k] = Math.max(0, +t.value||0);
+    if (st.s[t.dataset.k] > 0 && !st.on) { st.on = true; const cb = document.querySelector(`[data-on="${t.dataset.pid}"]`); if (cb) cb.checked = true; renderPChips(); }
+  }
+});
+$("#syncBtn").onclick = () => {
+  const ps = Object.values(curP).filter(x => x.on);
+  if (!ps.length) { toast("出場選手の記録がありません"); return; }
+  const sum = k => ps.reduce((s,x) => s + (x.s[k]||0), 0);
+  const map = {gf:"goal", o_shots:"shot", o_sot:"sot", o_assist:"assist", o_keyP:"keyP", o_tklA:"tklA", o_tklW:"tklW", o_intc:"intc", o_lost:"lost", o_foul:"foul", o_yc:"yc", o_save:"save"};
+  for (const [id, k] of Object.entries(map)) document.getElementById(id).value = sum(k);
+  saveDraft(); toast("チームスタッツに反映しました");
+};
+$("#rAdd").onclick = () => {
+  const name = $("#rName").value.trim(); if (!name) { toast("名前を入れてください"); return; }
+  roster.push({id:"p"+Date.now(), num:$("#rNum").value.trim(), name, pos:$("#rPos").value});
+  saveRoster(); $("#rName").value = ""; $("#rNum").value = ""; renderRoster(); $("#rName").focus();
+};
+$("#rosterList").addEventListener("change", e => {
+  const sel = e.target.closest("[data-rpos]"); if (!sel) return;
+  const r = roster.find(x => x.id === sel.dataset.rpos); if (!r) return;
+  r.pos = sel.value; saveRoster(); renderPChips(); renderPtbl();
+  setTimeout(renderRosterList, 600);   // 並び順を更新（少し待ってから）
+});
+$("#rosterList").addEventListener("click", e => {
+  const b = e.target.closest("[data-rdel]"); if (!b) return;
+  confirmTap(b, () => { roster = roster.filter(r => r.id !== b.dataset.rdel); delete curP[b.dataset.rdel]; if (selP === b.dataset.rdel) selP = null; saveRoster(); renderRoster(); });
+});
+
+/* player rating & comments */
+function rating(p, m){
+  const s = {...blankS(), ...p.s};
+  let r = 6.0 + s.goal*1.0 + s.assist*0.7 + Math.max(0, s.keyP - s.assist)*0.25 + Math.max(0, s.sot - s.goal)*0.15
+        - Math.max(0, s.shot - s.sot)*0.05 + s.tklW*0.15 - Math.max(0, s.tklA - s.tklW)*0.08 + s.intc*0.15
+        - s.lost*0.06 - s.foul*0.1 - s.yc*0.5 + s.save*0.3;
+  r += m.gf > m.ga ? 0.3 : m.gf < m.ga ? -0.2 : 0;
+  if (p.pos === "GK") r += m.ga === 0 ? 1.0 : -0.35*m.ga;
+  else if (p.pos === "DF") r += m.ga === 0 ? 0.5 : -0.12*m.ga;
+  return Math.round(clamp(r, 3, 10)*10)/10;
+}
+function pComment(p){
+  const s = {...blankS(), ...p.s}, g = [], b = [];
+  if (s.goal) g.push(`${s.goal}得点`);
+  if (s.assist) g.push(`${s.assist}アシスト`);
+  if (s.keyP - s.assist >= 2) g.push(`チャンスメイク（キーパス${s.keyP}）`);
+  if (s.tklW + s.intc >= 4) g.push(`ボール奪取${s.tklW + s.intc}回`);
+  if (s.tklA >= 4 && s.tklW/s.tklA >= .65) g.push(`タックル成功率${r0(pct(s.tklW,s.tklA))}%`);
+  if (s.save >= 2) g.push(`${s.save}セーブ`);
+  if (s.shot >= 2 && s.sot === s.shot) g.push("シュートを全て枠内に");
+  if (s.shot >= 3 && pct(s.sot, s.shot) < 34) b.push({t:`シュート精度（枠内${s.sot}/${s.shot}）`, a:"ボールを止めてから、強さよりコースを狙う"});
+  if (s.lost >= 6) b.push({t:`ロスト${s.lost}回`, a:"受ける前に首を振って周りを見る。無理なときは簡単にはたく"});
+  if (s.tklA >= 3 && pct(s.tklW, s.tklA) < 40) b.push({t:`タックル成功率${r0(pct(s.tklW,s.tklA))}%`, a:"すぐ飛び込まず、縦を切って相手のタッチが大きくなる瞬間を狙う"});
+  if (s.foul >= 3) b.push({t:`ファール${s.foul}`, a:"後ろから足を出さず、体を寄せてコースを切る"});
+  if (s.yc) b.push({t:`警告${s.yc}`, a:"感情的なプレーを抑える"});
+  if (p.pos === "FW" && s.shot === 0 && (s.min === 0 || s.min >= 15)) b.push({t:"シュート0本", a:"ゴール前では1回は自分で打つ意識を"});
+  return {g, b};
+}
+function statLine(p){
+  const s = {...blankS(), ...p.s};
+  return [s.goal?`${s.goal}得点`:"", s.assist?`${s.assist}アシスト`:"", s.shot?`シュート${s.shot}（枠内${s.sot}）`:"",
+    s.keyP?`キーパス${s.keyP}`:"", (s.tklW+s.intc)?`奪取${s.tklW+s.intc}`:"", s.lost?`ロスト${s.lost}`:"",
+    s.foul?`ファール${s.foul}`:"", s.save?`セーブ${s.save}`:"", s.min?`${s.min}分`:""].filter(Boolean).join(" ・ ") || "記録なし";
+}
+
+/* ---------- build input UI ---------- */
+function fillSelect(el, def){
+  el.innerHTML = Object.entries(SYSTEMS).map(([g, arr]) => `<optgroup label="${g}">${arr.map(s => `<option${s===def?" selected":""}>${s}</option>`).join("")}</optgroup>`).join("");
+}
+fillSelect($("#ownSys"), "4-4-2"); fillSelect($("#oppSys"), "4-3-3");
+
+$("#statRows").innerHTML = STATS.map(st => {
+  const cell = side => {
+    const id = `${side}_${st.k}`;
+    if (st.pct && side === "p") return `<div class="step" style="justify-content:center;height:40px;color:var(--text-2);font-weight:700" id="p_poss_view">50%</div>`;
+    return `<div class="step"${st.pct?' id="o_poss_box"':''}><button data-k="${id}" data-d="-${st.step||1}">−</button><input type="number" id="${id}" value="${st.pct?50:0}" min="0" ${st.pct?'max="100"':''} inputmode="numeric"><button data-k="${id}" data-d="${st.step||1}">＋</button></div>`;
+  };
+  const extra = st.pct ? `<label class="auto"><input type="checkbox" id="possAuto" checked>パス本数から自動計算</label>` : (st.s?`<small>${st.s}</small>`:"");
+  return `<div class="stat-row${st.pct?" poss-row":""}"><div class="nm">${st.n}${extra}</div>${cell("o")}${cell("p")}</div>`;
+}).join("");
+
+function calcPoss(){
+  const a = +$("#o_passA").value || 0, b = +$("#p_passA").value || 0;
+  return (a + b) > 0 ? r0(a / (a + b) * 100) : 50;
+}
+function updPoss(){
+  const auto = $("#possAuto").checked, box = $("#o_poss_box"), inp = $("#o_poss");
+  if (auto) inp.value = calcPoss();
+  box.classList.toggle("locked", auto);
+  inp.readOnly = auto;
+  box.querySelectorAll("button").forEach(b => b.disabled = auto);
+  $("#p_poss_view").textContent = (100 - clamp(+inp.value || 0)) + "%";
+}
+$("#possAuto").addEventListener("change", () => { updPoss(); saveDraft(); });
+function chips(el, name){
+  el.innerHTML = PATTERNS.map(p => `<button class="chip" data-g="${name}" data-v="${p}">${p}</button>`).join("");
+}
+chips($("#gfPat"), "gf"); chips($("#gaPat"), "ga");
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => { c.classList.toggle("on"); saveDraft(); }));
+
+document.addEventListener("click", e => {
+  const b = e.target.closest(".step button");
+  if (!b) return;
+  const inp = document.getElementById(b.dataset.k);
+  let v = (parseInt(inp.value) || 0) + parseInt(b.dataset.d);
+  v = Math.max(0, v); if (inp.max) v = Math.min(+inp.max, v);
+  inp.value = v; inp.dispatchEvent(new Event("input", {bubbles:true}));
+});
+document.addEventListener("input", e => {
+  if (["o_poss","o_passA","p_passA","possAuto"].includes(e.target.id)) updPoss();
+  if (e.target.id === "ownName") $("#lblOwn").textContent = e.target.value || "自チーム";
+  if (e.target.id === "oppName") $("#lblOpp").textContent = e.target.value || "相手";
+  saveDraft();
+});
+document.addEventListener("change", e => { if (e.target.tagName === "SELECT") saveDraft(); });
+
+/* ---------- read / write form ---------- */
+function readForm(){
+  const m = {
+    id: Date.now(),
+    date: $("#date").value, comp: $("#comp").value.trim(),
+    ownName: $("#ownName").value.trim() || "自チーム", oppName: $("#oppName").value.trim() || "相手",
+    ownSys: $("#ownSys").value, oppSys: $("#oppSys").value,
+    gf: +$("#gf").value||0, ga: +$("#ga").value||0,
+    o:{}, p:{},
+    possAuto: $("#possAuto").checked,
+    gfPat: [...document.querySelectorAll('.chip.on[data-g="gf"]')].map(c => c.dataset.v),
+    gaPat: [...document.querySelectorAll('.chip.on[data-g="ga"]')].map(c => c.dataset.v)
+  };
+  STATS.forEach(st => {
+    m.o[st.k] = +document.getElementById("o_"+st.k).value || 0;
+    m.p[st.k] = st.pct ? 100 - clamp(m.o[st.k]) : (+document.getElementById("p_"+st.k).value || 0);
+  });
+  m.players = sortedRoster().map(r => {
+    const st = curP[r.id];
+    return st && st.on ? {id:r.id, num:r.num, name:r.name, pos:r.pos, s:{...st.s}} : null;
+  }).filter(Boolean);
+  return m;
+}
+function writeForm(m){
+  $("#date").value = m.date || ""; $("#comp").value = m.comp || "";
+  $("#ownName").value = m.ownName === "自チーム" ? "" : (m.ownName||""); $("#oppName").value = m.oppName === "相手" ? "" : (m.oppName||"");
+  $("#ownSys").value = m.ownSys || "4-4-2"; $("#oppSys").value = m.oppSys || "4-3-3";
+  $("#gf").value = m.gf||0; $("#ga").value = m.ga||0;
+  STATS.forEach(st => {
+    document.getElementById("o_"+st.k).value = m.o?.[st.k] ?? (st.pct?50:0);
+    if (!st.pct) document.getElementById("p_"+st.k).value = m.p?.[st.k] ?? 0;
+  });
+  $("#possAuto").checked = m.possAuto !== false;
+  updPoss();
+  $("#lblOwn").textContent = m.ownName || "自チーム"; $("#lblOpp").textContent = m.oppName || "相手";
+  document.querySelectorAll(".chip[data-g]").forEach(c => c.classList.toggle("on", !!(c.dataset.g==="gf"?m.gfPat:m.gaPat)?.includes(c.dataset.v)));
+  curP = {}; selP = null; undoStack.length = 0; $("#undoBtn").disabled = true; $("#lastLog").textContent = "選手を選んでください";
+  let added = false;
+  (m.players || []).forEach(p => {
+    if (!roster.some(r => r.id === p.id)) { roster.push({id:p.id, num:p.num, name:p.name, pos:p.pos}); added = true; }
+    curP[p.id] = {on:true, s:{...blankS(), ...p.s}};
+  });
+  if (added) saveRoster();
+  renderRoster();
+}
+let draftTimer;
+function saveDraft(){ clearTimeout(draftTimer); draftTimer = setTimeout(() => store.set("sma_draft", readForm()), 300); }
+
+const SAMPLE = {
+  date: new Date().toISOString().slice(0,10), comp:"練習試合", ownName:"", oppName:"FCブルー",
+  ownSys:"4-4-2", oppSys:"4-3-3", gf:1, ga:2,
+  o:{poss:56,shots:14,sot:4,passA:380,passC:255,assist:1,keyP:6,cross:18,tklA:22,tklW:10,intc:9,lost:48,foul:15,yc:2,ck:7,off:5,save:3},
+  p:{shots:9,sot:5,passA:300,passC:228,assist:2,keyP:7,cross:6,tklA:20,tklW:13,intc:14,lost:35,foul:8,yc:0,ck:3,off:1,save:3},
+  gfPat:["セットプレー"], gaPat:["カウンター","ミス絡み"],
+  players:[
+    {id:"s_1", num:"1", name:"田中", pos:"GK", s:{min:60,save:3,lost:2}},
+    {id:"s_2", num:"2", name:"鈴木", pos:"DF", s:{min:60,tklA:3,tklW:2,intc:2,lost:3,foul:2}},
+    {id:"s_3", num:"3", name:"高橋", pos:"DF", s:{min:60,tklA:4,tklW:1,intc:2,lost:5,foul:3,yc:1}},
+    {id:"s_4", num:"4", name:"伊藤", pos:"DF", s:{min:60,tklA:3,tklW:2,intc:2,lost:4,foul:1}},
+    {id:"s_5", num:"5", name:"渡辺", pos:"DF", s:{min:60,tklA:2,tklW:1,keyP:1,lost:3,foul:1}},
+    {id:"s_6", num:"6", name:"山本", pos:"MF", s:{min:60,shot:1,tklA:4,tklW:2,intc:2,lost:6,foul:3,yc:1}},
+    {id:"s_7", num:"7", name:"中村", pos:"MF", s:{min:60,shot:2,sot:1,keyP:1,tklA:2,tklW:1,lost:6,foul:1}},
+    {id:"s_8", num:"8", name:"小林", pos:"MF", s:{min:60,shot:1,keyP:1,tklA:2,tklW:1,intc:1,lost:5,foul:2}},
+    {id:"s_10",num:"10",name:"加藤", pos:"MF", s:{min:60,shot:2,sot:1,assist:1,keyP:3,tklA:1,lost:7,foul:1}},
+    {id:"s_9", num:"9", name:"吉田", pos:"FW", s:{min:60,goal:1,shot:5,sot:2,lost:4,foul:1}},
+    {id:"s_11",num:"11",name:"山田", pos:"FW", s:{min:60,shot:3,tklA:1,lost:3}}
+  ]
+};
+$("#sampleBtn").onclick = () => {
+  const sm = JSON.parse(JSON.stringify(SAMPLE));
+  if (roster.length && !roster.some(r => String(r.id).startsWith("s_"))) sm.players = []; // 自分の選手登録がある時はサンプル選手を足さない
+  writeForm(sm); saveDraft(); toast("サンプルを入力しました");
+};
+$("#resetBtn").onclick = () => { writeForm({date:new Date().toISOString().slice(0,10), o:{}, p:{}, gfPat:[], gaPat:[]}); saveDraft(); toast("クリアしました"); };
+
+/* ---------- analysis engine ---------- */
+function metrics(t, gf, ga, opp){
+  return {
+    passAcc: pct(t.passC, t.passA),
+    sotRate: pct(t.sot, t.shots),
+    conv: pct(gf, t.shots),
+    tklRate: pct(t.tklW, t.tklA),
+    keyPerShot: t.shots ? t.keyP / t.shots : 0,
+    lostRate: t.passA ? t.lost / (t.passA/10) : 0, // losses per 10 passes
+    regain: t.tklW + t.intc,
+    gf, ga
+  };
+}
+function radar(m){
+  const O = metrics(m.o, m.gf, m.ga), P = metrics(m.p, m.ga, m.gf);
+  const side = (a, b, A, B) => [
+    clamp(share(a.shots, b.shots)),                                   // 攻撃量
+    clamp(A.conv * 2.5),                                              // 決定力
+    clamp(A.passAcc),                                                 // パス精度
+    clamp(share(a.keyP, b.keyP)),                                     // チャンス創出
+    clamp(A.tklRate * 0.6 + share(a.intc + a.tklW, b.intc + b.tklW) * 0.4), // 守備・奪回
+    clamp(100 - a.foul * 4 - a.yc * 8),                               // 規律
+    clamp(a.poss)                                                      // 支配
+  ];
+  return { O, P, own: side(m.o, m.p, O, P), opp: side(m.p, m.o, P, O) };
+}
+
+function analyze(m){
+  const {O, P} = radar(m);
+  const o = m.o, p = m.p;
+  const weak = [], strong = [];
+  const add = (arr, sev, key, title, detail, drill) => arr.push({sev, key, title, detail, drill});
+
+  // ---- weaknesses
+  if (o.passA >= 30 && O.passAcc < 70) add(weak, O.passAcc < 60 ? 3 : 2, "pass", "パスの精度が低い",
+    `パス成功率 <span class="num">${r0(O.passAcc)}%</span>（相手 ${r0(P.passAcc)}%）。つなぎの途中で奪われ、攻撃が続いていません。`,
+    {name:"4対2ロンド（2タッチ制限）", how:"10m四方。受ける前に首を振る・体の向きを作ることを意識。15本連続で成功したら1タッチに。"});
+  if (o.shots + p.shots > 0 && share(o.shots, p.shots) < 45) add(weak, share(o.shots,p.shots) < 35 ? 3 : 2, "shots", "シュートまで行けていない",
+    `シュート <span class="num">${o.shots}本</span> 対 ${p.shots}本。アタッキングサードでの判断が遅い、またはボールを失っています。`,
+    {name:"3対2＋シュート（制限時間8秒）", how:"ハーフコートで攻撃3人。8秒以内にシュートで終わるルールで、ゴールに向かう意識を付ける。"});
+  if (o.shots >= 5 && O.sotRate < 40) add(weak, O.sotRate < 25 ? 3 : 2, "sot", "枠内シュートが少ない",
+    `枠内率 <span class="num">${r0(O.sotRate)}%</span>（${o.sot}/${o.shots}本）。無理な体勢・遠い距離からのシュートが多い可能性。`,
+    {name:"コーンゲートシュート", how:"ゴール四隅にコーンでターゲットを作り、パスを受けてからワンタッチ目の置き所→インサイドで枠に流し込む反復。"});
+  if (o.sot >= 4 && O.conv < 12) add(weak, 3, "conv", "決定力不足（チャンスを決めきれない）",
+    `枠内 ${o.sot}本で得点 <span class="num">${m.gf}</span>。決定率 ${r0(O.conv)}%。GKとの1対1や最後の落ち着きが課題。`,
+    {name:"GKとの1対1（後ろから追われる設定）", how:"DFに追われながらGKと1対1。GKの動きを見て逆を取る。プレッシャー下で決め切る練習。"});
+  if (o.tklA >= 6 && O.tklRate < 50) add(weak, O.tklRate < 40 ? 3 : 2, "tkl", "1対1の守備で奪いきれない",
+    `タックル成功率 <span class="num">${r0(O.tklRate)}%</span>（${o.tklW}/${o.tklA}）。飛び込んでかわされる場面が多い。`,
+    {name:"1対1＋カバー（2対2へ発展）", how:"すぐ飛び込まず、半身で縦を切って外へ追い込む。奪いに行くタイミング（相手のタッチが大きくなった瞬間）を共有。"});
+  if (o.foul >= 12 || o.foul - p.foul >= 5) add(weak, o.foul >= 16 ? 3 : 2, "foul", "ファールが多い",
+    `ファール <span class="num">${o.foul}</span>（相手 ${p.foul}）${o.yc?`・警告 ${o.yc}枚`:""}。危険な位置でFKを与え、試合の流れも切れています。`,
+    {name:"手を使わない守備（ボディコンタクト練習）", how:"肩と肩のコンタクト、体を入れるタイミングの練習。後ろから足を出さない約束事を確認。"});
+  if (o.passA >= 30 && O.lostRate > 1.3) add(weak, O.lostRate > 1.8 ? 3 : 2, "lost", "ボールロストが多い",
+    `ロスト <span class="num">${o.lost}回</span>（パス10本あたり ${O.lostRate.toFixed(1)}回）。奪われた後にカウンターを受けるリスクが高い。`,
+    {name:"制限付きゲーム（ロストしたら相手に1点）", how:"小さいコートのゲームで、自陣でのロストに罰則。サポートの角度と距離を整える。"});
+  if (o.poss >= 55 && share(o.shots, p.shots) < 55) add(weak, 2, "sterile", "ボールは持てるが攻撃に厚みがない",
+    `支配率 <span class="num">${o.poss}%</span> なのにシュート数は ${o.shots}対${p.shots}。横パス・バックパスが多く、前進できていない。`,
+    {name:"縦パス必須のポゼッション", how:"3本に1本は縦パス（ライン間）を入れるルール。受け手は相手の間に立つ。"});
+  if (p.sot >= 5 || (p.shots >= 8 && P.sotRate > 50)) add(weak, p.sot >= 7 ? 3 : 2, "block", "ゴール前で打たれすぎている",
+    `相手の枠内シュート <span class="num">${p.sot}本</span>。シュートブロック・寄せの距離が甘い。`,
+    {name:"ペナルティエリア内3対3＋寄せ", how:"シュートを打たせない寄せの速さと、ブロックの体の向きを練習。"});
+  if (o.cross >= 12 && m.gf <= 1 && !m.gfPat.includes("クロス")) add(weak, 2, "cross", "クロスの質・中の人数",
+    `クロス <span class="num">${o.cross}本</span> で得点につながらず。上げるだけになっている、中に人が足りない。`,
+    {name:"クロス＆フィニッシュ（3人で入る）", how:"ニア・ファー・マイナスの3か所に必ず人が入る約束。クロスは低く速いボールを優先。"});
+  if (o.off >= 4) add(weak, 1, "off", "オフサイドが多い",
+    `オフサイド <span class="num">${o.off}回</span>。抜け出しのタイミングが早い。`,
+    {name:"裏抜けのタイミング練習", how:"出し手が顔を上げた瞬間に動き出す。DFラインと平行に動いてから斜めに抜ける。"});
+  if (m.gf > 0 && o.assist === 0 && o.keyP <= 2) add(weak, 1, "solo", "連係による崩しが少ない",
+    `アシスト0・キーパス ${o.keyP}本。個人の突破頼みになっている。`,
+    {name:"3人目の動きのパターン練習", how:"壁パス→3人目が裏へ。誰が・いつ走るかを3パターン決めて反復。"});
+  // concede patterns
+  const GA = {
+    "セットプレー":["セットプレーから失点", "マークの確認、ゾーンとマンツーマンの役割を整理。", {name:"CK・FK守備の確認", how:"キッカーごとにマーカーを決め、ニアの人とストーン役を固定。"}],
+    "カウンター":["カウンターから失点", "攻撃時に後ろに残る人数（リスク管理）が足りない。", {name:"攻撃中のリスク管理（常に2+1を残す）", how:"攻め込んだ時にCB2人＋ボランチ1人を残すルールで紅白戦。奪われた瞬間5秒の即時奪回も。"}],
+    "クロス":["クロスから失点", "ゴール前でのマークの外しやすさ、クロスを上げさせる寄せの甘さ。", {name:"クロス対応（ボールとマークを同一視野）", how:"半身で構えてボールとマークを同時に見る。ニアを最優先で消す。"}],
+    "ミドルシュート":["ミドルシュートで失点", "バイタルエリアでの寄せが遅い。", {name:"バイタルの寄せ", how:"ボランチがバイタルを空けない。打たれる前に1歩寄せる。"}],
+    "裏への抜け出し":["裏への抜け出しから失点", "DFラインの統一と、出し手へのプレッシャー不足。", {name:"ラインコントロール", how:"出し手にプレッシャーがかかっていない時はラインを下げる、を声で共有。"}],
+    "個人突破":["個人突破から失点", "1対1の対応とカバーリングの距離。", {name:"1対1＋カバー", how:"抜かれた時に2人目がすぐカバーできる距離感を作る。"}],
+    "ミス絡み":["ミスから失点", "自陣での不用意なパス・クリアミス。", {name:"プレッシャー下のビルドアップ", how:"GK・DFからのつなぎで、無理な時は大きく蹴る判断基準を決める。"}],
+    "PK":["PKで失点", "ペナルティエリア内での不用意な接触。", {name:"エリア内の守備", how:"エリア内では足を出さず、体を寄せてコースを切る。"}]
+  };
+  m.gaPat.forEach(pt => { const g = GA[pt]; if (g) add(weak, 2, "ga_"+pt, g[0], g[1], g[2]); });
+
+  // ---- strengths
+  if (O.passAcc >= 78) add(strong, 0, "", "パスがよくつながっている", `パス成功率 ${r0(O.passAcc)}%`);
+  if (share(o.shots, p.shots) >= 60) add(strong, 0, "", "シュートまで持ち込めている", `シュート ${o.shots}本 対 ${p.shots}本`);
+  if (o.shots >= 5 && O.sotRate >= 50) add(strong, 0, "", "枠内シュート率が高い", `枠内率 ${r0(O.sotRate)}%`);
+  if (O.conv >= 25 && m.gf >= 2) add(strong, 0, "", "少ないチャンスで決めきった", `決定率 ${r0(O.conv)}%`);
+  if (o.tklA >= 6 && O.tklRate >= 60) add(strong, 0, "", "1対1の守備が強い", `タックル成功率 ${r0(O.tklRate)}%`);
+  if (o.intc >= p.intc + 4) add(strong, 0, "", "インターセプトで奪えている", `インターセプト ${o.intc}回（相手 ${p.intc}）`);
+  if (share(o.keyP, p.keyP) >= 60) add(strong, 0, "", "チャンスをよく作れている", `キーパス ${o.keyP}本`);
+  if (p.sot <= 2 && p.shots + o.shots > 0) add(strong, 0, "", "ゴール前の守備が堅い", `相手の枠内シュート ${p.sot}本`);
+  if (o.foul <= 8 && o.yc === 0) add(strong, 0, "", "クリーンに戦えている", `ファール ${o.foul}・警告なし`);
+  if (m.gfPat.includes("セットプレー")) add(strong, 0, "", "セットプレーで得点できた", "リスタートが武器になっている");
+
+  // ---- player-based team insights
+  const pl = (m.players || []).map(x => ({...x, s:{...blankS(), ...x.s}}));
+  if (pl.length) {
+    const tShots = pl.reduce((s,x) => s + x.s.shot, 0);
+    const top = [...pl].sort((a,b) => b.s.shot - a.s.shot)[0];
+    if (tShots >= 8 && top.s.shot / tShots >= 0.45) add(weak, 1, "conc", "シュートが特定の選手に偏っている",
+      `${esc(pLabel(top))} が <span class="num">${top.s.shot}本</span>（チームの${r0(top.s.shot/tShots*100)}%）。相手に狙いを読まれやすい。`,
+      {name:"2列目の飛び出しパターン", how:"FWがつぶれ役になり、MFがペナルティエリアに入ってシュートする形を反復。"});
+    const fwShots = pl.filter(x => x.pos === "FW").reduce((s,x) => s + x.s.shot, 0);
+    if (tShots >= 6 && pl.some(x => x.pos === "FW") && fwShots / tShots < 0.35) add(weak, 1, "fw", "FWがシュートを打てていない",
+      `FWのシュートは <span class="num">${fwShots}本</span>（チームの${r0(fwShots/tShots*100)}%）。前線にボールが入っていない。`,
+      {name:"くさび→ターン→シュート", how:"FWが背負って受けてからのターン、落としからのシュートを反復。"});
+    const backLost = pl.filter(x => x.pos === "GK" || x.pos === "DF").reduce((s,x) => s + x.s.lost, 0);
+    const tLost = pl.reduce((s,x) => s + x.s.lost, 0);
+    if (backLost >= 10 && backLost / Math.max(1, tLost) >= 0.35) add(weak, 2, "back", "後ろでのボールロストが多い",
+      `GK・DFのロストが <span class="num">${backLost}回</span>。自陣で奪われると即失点のピンチになります。`,
+      {name:"GKを含めたビルドアップ（3対2）", how:"GK・CB2人 対 FW2人で、前進できたら1点。無理なときは大きく蹴る判断も練習。"});
+  }
+
+  weak.sort((a,b) => b.sev - a.sev);
+  return { weak, strong, O, P };
+}
+
+function grade(m, R){
+  // overall performance score (0-100) independent of result
+  const own = R.own, opp = R.opp;
+  const diff = own.reduce((s,v,i) => s + (v - opp[i]), 0) / own.length; // -100..100
+  let s = 60 + diff * 0.6 + (m.gf - m.ga) * 4;
+  s = clamp(r0(s), 10, 98);
+  const g = s >= 85 ? "S" : s >= 72 ? "A" : s >= 58 ? "B" : s >= 45 ? "C" : "D";
+  return {s, g};
+}
+
+function writeReport(m, A, R){
+  const o = m.o, p = m.p, O = A.O, P = A.P;
+  const res = m.gf > m.ga ? "勝利" : m.gf < m.ga ? "敗戦" : "引き分け";
+  const paras = [];
+  paras.push(`${m.oppName}（${m.oppSys}）との一戦は <b>${m.gf}-${m.ga}で${res}</b>。支配率は${o.poss}%、シュートは${o.shots}本（枠内${o.sot}）に対し相手は${p.shots}本（枠内${p.sot}）でした。`);
+
+  // biggest gaps
+  const labels = ["攻撃量","決定力","パス精度","チャンス創出","守備・奪回","規律","支配"];
+  const gaps = R.own.map((v,i) => ({l:labels[i], d:v - R.opp[i]}));
+  const best = [...gaps].sort((a,b) => b.d - a.d)[0], worst = [...gaps].sort((a,b) => a.d - b.d)[0];
+
+  if (res === "勝利") {
+    paras.push(best.d > 5 ? `勝因は「${best.l}」で相手を上回ったこと。${worst.d < -10 ? `一方で「${worst.l}」は相手に劣っており、格上相手には突かれる可能性があります。` : "内容面でも主導権を握れた試合です。"}`
+                         : `スタッツ上は互角で、勝負どころを制した試合。内容で上回れるよう細部を詰めたいところです。`);
+  } else if (res === "敗戦") {
+    if (o.shots > p.shots && o.poss >= 50) paras.push(`ボールを持ち、シュート数でも上回りながら敗れた「内容では負けていない」試合。差は${O.conv < P.conv ? `決定力（決定率 ${r0(O.conv)}% 対 ${r0(P.conv)}%）` : "ゴール前の質"}と、${m.gaPat.length ? `「${m.gaPat.join("・")}」からの失点` : "失点場面の守備"}にあります。`);
+    else paras.push(`最も差が出たのは「${worst.l}」。ここで相手に主導権を握られたことが敗因と考えられます。${best.d > 5 ? `「${best.l}」は上回っていたので、これを活かす時間を増やしたい。` : ""}`);
+  } else {
+    paras.push(`${o.shots > p.shots ? "チャンスの数では上回っており、勝ちきれなかった試合" : o.shots < p.shots ? "押し込まれる時間もありながら粘って勝点を得た試合" : "拮抗した試合"}。「${worst.l}」の改善が勝点3への近道です。`);
+  }
+
+  const top = A.weak.slice(0,2).map(w => w.title);
+  if (top.length) paras.push(`課題は <b>${top.join("」「").replace(/^/,"「")}」</b>。相手の${m.oppSys}は${VS[m.oppSys]?.weak || ""}ため、次の対戦ではそこを狙いたい。`);
+  else paras.push(`大きな課題は見当たらない良い内容。相手の${m.oppSys}の弱点（${VS[m.oppSys]?.weak || ""}）を突く形を増やせるとさらに良くなります。`);
+  return paras;
+}
+
+function nextPlan(m, A){
+  const vs = VS[m.oppSys] || VS["不明"];
+  const items = [];
+  items.push({t:`攻撃：${m.oppSys}の弱点を突く`, d:`${vs.weak}。→ ${vs.plan}。`});
+  items.push({t:"守備：相手の良さを消す", d:vs.def + "。"});
+  A.weak.slice(0,3).forEach(w => { if (w.drill) items.push({t:`改善：${w.title}`, d:w.detail.replace(/<[^>]+>/g,""), drill:w.drill}); });
+  if (m.gf < m.ga && m.o.poss < 45) items.push({t:"試合運び：奪った後の最初のパス", d:"押し込まれる展開では、奪った直後の1本目を前へ。前線は奪った瞬間に裏・サイドへ走る約束を。"});
+  return items;
+}
+
+/* ---------- players section ---------- */
+function ratedPlayers(m){
+  return (m.players || []).map(p => ({...p, s:{...blankS(), ...p.s}})).map(p => ({...p, r:rating(p, m), c:pComment(p)})).sort((a,b) => b.r - a.r);
+}
+function playersHTML(m){
+  const rp = ratedPlayers(m);
+  if (!rp.length) return `<div class="card"><h2>選手別の評価</h2><p style="margin:0;color:var(--text-2);font-size:13px">選手別の記録がありません。「データ入力」の「選手別記録」で選手を選んでプレーをタップすると、ここに個人の評価とコメントが出ます。</p></div>`;
+  const mvp = rp[0];
+  const names = (arr, k) => arr.filter(p => p.s[k] > 0).sort((a,b) => b.s[k]-a.s[k]).map(p => `${esc(p.name)}${p.s[k]>1?`(${p.s[k]})`:""}`).join("、") || "—";
+  const maxBy = f => { const t = [...rp].sort((a,b) => f(b)-f(a))[0]; return f(t) > 0 ? `${esc(t.name)}（${f(t)}）` : "—"; };
+  return `<div class="card">
+    <h2>選手別の評価 <span class="tag">${rp.length}人</span></h2>
+    <div class="mvp"><div class="no">${esc(mvp.num??"")}</div><div><small>この試合のMVP</small><b>${esc(mvp.name)}</b><div style="font-size:12px;color:var(--text-2)">${mvp.c.g.slice(0,2).join("・") || statLine(mvp)}</div></div><div class="sc">${mvp.r.toFixed(1)}</div></div>
+    <div class="hl">
+      <div><span>得点</span><b>${names(rp,"goal")}</b></div>
+      <div><span>アシスト</span><b>${names(rp,"assist")}</b></div>
+      <div><span>最多シュート</span><b>${maxBy(p => p.s.shot)}</b></div>
+      <div><span>最多ボール奪取</span><b>${maxBy(p => p.s.tklW + p.s.intc)}</b></div>
+    </div>
+    ${rp.map(p => `<div class="pr">
+      <div class="h"><span class="no">${esc(p.num??"")}</span><span class="nm">${esc(p.name)}<small>${p.pos}</small></span><span class="rt">${p.r.toFixed(1)}</span></div>
+      <div class="rb"><div style="width:${p.r*10}%"></div></div>
+      <div class="ln">${statLine(p)}</div>
+      ${p.c.g.length ? `<div class="cm"><span class="g">◎</span> ${p.c.g.join("・")}</div>` : ""}
+      ${p.c.b.length ? `<div class="cm"><span class="b">△</span> ${p.c.b.map(x => x.t).join("・")}<br><span class="a">→ ${p.c.b[0].a}</span></div>` : ""}
+    </div>`).join("")}
+    <p class="note">評価は10点満点（6.0が平均的な出来）。得点・アシスト・ボール奪取でプラス、ロスト・ファール・失点でマイナスになります。</p>
+  </div>`;
+}
+
+/* ---------- render analysis ---------- */
+let charts = [];
+function destroyCharts(){ charts.forEach(c => c.destroy()); charts = []; }
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function renderAnalysis(m){
+  destroyCharts();
+  const R = radar(m), A = analyze(m), G = grade(m, R);
+  const O = A.O, P = A.P;
+  const res = m.gf > m.ga ? "WIN" : m.gf < m.ga ? "LOSE" : "DRAW";
+  const report = writeReport(m, A, R), plan = nextPlan(m, A);
+
+  const cmpRows = [
+    ["シュート", m.o.shots, m.p.shots], ["枠内シュート", m.o.sot, m.p.sot], ["パス成功", m.o.passC, m.p.passC],
+    ["キーパス", m.o.keyP, m.p.keyP], ["アシスト", m.o.assist, m.p.assist], ["クロス", m.o.cross, m.p.cross],
+    ["タックル成功", m.o.tklW, m.p.tklW], ["インターセプト", m.o.intc, m.p.intc], ["ボールロスト", m.o.lost, m.p.lost],
+    ["ファール", m.o.foul, m.p.foul], ["コーナー", m.o.ck, m.p.ck], ["オフサイド", m.o.off, m.p.off]
+  ];
+  const cmpHTML = cmpRows.map(([n,a,b]) => {
+    const s = share(a,b);
+    return `<div class="cmp"><div class="top"><b>${a}</b><span class="c">${n}</span><b class="r">${b}</b></div>
+      <div class="bar"><div class="o" style="width:${s}%"></div><div class="p" style="width:${100-s}%"></div></div></div>`;
+  }).join("");
+
+  const kpi = (l, v, a, b, unit="%") => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}<small>${unit}</small></div><div class="d"><span class="own">自 ${a}</span> ／ <span class="opp">相手 ${b}</span></div></div>`;
+
+  $("#analysisBody").innerHTML = `
+    <div class="result-hero">
+      <div class="meta">${esc(m.date || "")} ${esc(m.comp || "")}</div>
+      <div class="names"><span>${esc(m.ownName)}</span><span class="sc">${m.gf} - ${m.ga}</span><span>${esc(m.oppName)}</span></div>
+      <div class="meta">${esc(m.ownSys)} vs ${esc(m.oppSys)}</div>
+      <div style="margin-top:8px"><span class="badge">${res}</span></div>
+      <div class="grade">内容評価 <b>${G.g}</b>（${G.s}点）</div>
+    </div>
+
+    <div class="kpis">
+      ${kpi("パス成功率", r0(O.passAcc), r0(O.passAcc)+"%", r0(P.passAcc)+"%")}
+      ${kpi("シュート決定率", r0(O.conv), r0(O.conv)+"%", r0(P.conv)+"%")}
+      ${kpi("枠内シュート率", r0(O.sotRate), r0(O.sotRate)+"%", r0(P.sotRate)+"%")}
+      ${kpi("タックル成功率", r0(O.tklRate), r0(O.tklRate)+"%", r0(P.tklRate)+"%")}
+    </div>
+
+    <div class="card">
+      <h2>戦評</h2>
+      <div class="report">${report.map(p => `<p>${p}</p>`).join("")}</div>
+      <div class="row-btns" style="margin-top:12px"><button class="btn ghost small" id="copyBtn">戦評をコピー（共有用）</button></div>
+    </div>
+
+    <div class="card">
+      <h2>チーム能力レーダー</h2>
+      <div class="legend"><span><i style="background:var(--own)"></i>${esc(m.ownName)}</span><span><i style="background:var(--opp)"></i>${esc(m.oppName)}</span></div>
+      <div class="chart-wrap"><canvas id="radarC" aria-label="チーム能力レーダーチャート"></canvas></div>
+      <details><summary>数値で見る</summary>
+        <table class="tbl"><tr><th>指標（0〜100）</th><th>${esc(m.ownName)}</th><th>${esc(m.oppName)}</th></tr>
+        ${["攻撃量","決定力","パス精度","チャンス創出","守備・奪回","規律","支配"].map((l,i) => `<tr><td>${l}</td><td>${r0(R.own[i])}</td><td>${r0(R.opp[i])}</td></tr>`).join("")}</table>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>スタッツ比較</h2>
+      <div class="legend"><span><i style="background:var(--own)"></i>${esc(m.ownName)}（左）</span><span><i style="background:var(--opp)"></i>${esc(m.oppName)}（右）</span></div>
+      <div class="cmp"><div class="top"><b>${m.o.poss}%</b><span class="c">ボール支配率${m.possAuto!==false?"（パス本数から推定）":""}</span><b class="r">${m.p.poss}%</b></div>
+        <div class="bar"><div class="o" style="width:${m.o.poss}%"></div><div class="p" style="width:${m.p.poss}%"></div></div></div>
+      ${cmpHTML}
+    </div>
+
+    <div class="card">
+      <h2>欠点・課題 <span class="tag">${A.weak.length}件</span></h2>
+      ${A.weak.length ? A.weak.map(w => `<div class="item"><div class="ic ${w.sev>=3?"bad":"warn"}">!</div><div><h3>${w.title}<span class="sev ${w.sev>=3?"bad":"warn"}">${w.sev>=3?"重要":w.sev==2?"要改善":"注意"}</span></h3><p>${w.detail}</p></div></div>`).join("")
+        : `<p style="color:var(--text-2);margin:0">目立った課題はありません。</p>`}
+    </div>
+
+    <div class="card">
+      <h2>良かった点</h2>
+      ${A.strong.length ? A.strong.map(w => `<div class="item"><div class="ic good">✓</div><div><h3>${w.title}</h3><p>${w.detail}</p></div></div>`).join("")
+        : `<p style="color:var(--text-2);margin:0">数値上で突出した強みは出ませんでした。</p>`}
+    </div>
+
+    ${playersHTML(m)}
+
+    <div class="card">
+      <h2>次に勝つためのプラン</h2>
+      <div class="plan">${plan.map(it => `<div class="pi"><h3>${it.t}</h3><p>${it.d}</p>${it.drill?`<div class="drill"><b>おすすめ練習</b>${it.drill.name}：${it.drill.how}</div>`:""}</div>`).join("")}</div>
+    </div>
+
+    <div class="row-btns">
+      <button class="btn primary" id="saveBtn" style="flex:1">この試合を履歴に保存</button>
+    </div>
+  `;
+
+  // radar chart
+  const ownC = css("--own"), oppC = css("--opp"), grid = css("--line"), txt = css("--text-2");
+  const hexA = (h, a) => { const n = parseInt(h.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; };
+  charts.push(new Chart($("#radarC"), {
+    type:"radar",
+    data:{ labels:["攻撃量","決定力","パス精度","チャンス創出","守備・奪回","規律","支配"],
+      datasets:[
+        {label:m.ownName, data:R.own.map(r0), borderColor:ownC, backgroundColor:hexA(ownC,.18), borderWidth:2, pointRadius:4, pointBackgroundColor:ownC, pointBorderColor:css("--surface"), pointBorderWidth:2},
+        {label:m.oppName, data:R.opp.map(r0), borderColor:oppC, backgroundColor:hexA(oppC,.12), borderWidth:2, pointRadius:4, pointBackgroundColor:oppC, pointBorderColor:css("--surface"), pointBorderWidth:2}
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c => `${c.dataset.label}: ${c.raw}`}}},
+      scales:{ r:{min:0,max:100, ticks:{display:false, stepSize:25}, grid:{color:grid}, angleLines:{color:grid},
+        pointLabels:{color:txt, font:{family:"Noto Sans JP", size:12, weight:"700"}}}}}
+  }));
+
+  $("#copyBtn").onclick = async () => {
+    const txtOut = [`【試合レポート】${m.date||""} ${m.comp||""}`, `${m.ownName} ${m.gf}-${m.ga} ${m.oppName}（内容評価 ${G.g}）`, "",
+      ...report.map(p => p.replace(/<[^>]+>/g,"")), "",
+      ...(() => { const rp = ratedPlayers(m); if (!rp.length) return [];
+        const sc = rp.filter(p => p.s.goal).map(p => p.name + (p.s.goal>1?`(${p.s.goal})`:"")).join("、");
+        const as = rp.filter(p => p.s.assist).map(p => p.name).join("、");
+        return [`■MVP：${pLabel(rp[0])}（${rp[0].r.toFixed(1)}）`, sc ? `■得点：${sc}` : "", as ? `■アシスト：${as}` : "", ""].filter((x,i,a) => x !== "" || i === a.length-1); })(),
+      "■課題", ...A.weak.slice(0,4).map(w => "・" + w.title), "",
+      "■良かった点", ...A.strong.slice(0,4).map(w => "・" + w.title), "",
+      "■次の試合に向けて", ...plan.slice(0,4).map(p => "・" + p.t)].join("\n");
+    try { await navigator.clipboard.writeText(txtOut); toast("コピーしました"); }
+    catch(e){ toast("コピーできませんでした"); }
+  };
+  $("#saveBtn").onclick = () => {
+    const h = store.get("sma_hist", []);
+    const i = h.findIndex(x => x.id === m.id);
+    if (i >= 0) h[i] = m; else h.unshift(m);
+    store.set("sma_hist", h); toast("履歴に保存しました"); renderHistory();
+  };
+}
+
+/* ---------- history ---------- */
+function renderHistory(){
+  destroyHistChart();
+  const h = store.get("sma_hist", []);
+  if (!h.length) {
+    $("#historyBody").innerHTML = `<div class="card"><div class="empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+      <div>保存した試合はまだありません。<br>分析画面の「履歴に保存」で記録すると、<br>試合ごとの推移や繰り返し出る課題が見られます。</div></div></div>`;
+    return;
+  }
+  const W = h.filter(x => x.gf > x.ga).length, D = h.filter(x => x.gf === x.ga).length, L = h.length - W - D;
+  const gf = h.reduce((s,x) => s + x.gf, 0), ga = h.reduce((s,x) => s + x.ga, 0);
+  // recurring weaknesses
+  const cnt = {};
+  h.forEach(x => analyze(x).weak.forEach(w => { cnt[w.title] = (cnt[w.title]||0) + 1; }));
+  const recur = Object.entries(cnt).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const chron = [...h].reverse();
+
+  $("#historyBody").innerHTML = `
+    <div class="card"><h2>通算成績 <span class="tag">${h.length}試合</span></h2>
+      <div class="record"><div><b>${W}</b><span>勝</span></div><div><b>${D}</b><span>分</span></div><div><b>${L}</b><span>敗</span></div><div><b>${gf}-${ga}</b><span>得失点</span></div></div>
+    </div>
+    ${h.length >= 2 ? `<div class="card"><h2>主要指標の推移</h2>
+      <div class="legend"><span><i style="background:var(--own)"></i>パス成功率</span><span><i style="background:var(--opp)"></i>タックル成功率</span><span><i style="background:var(--s3)"></i>枠内シュート率</span></div>
+      <div class="chart-wrap short"><canvas id="trendC" aria-label="主要指標の推移"></canvas></div>
+      <details><summary>数値で見る</summary><table class="tbl"><tr><th>試合</th><th>パス</th><th>タックル</th><th>枠内</th></tr>
+      ${chron.map(x => { const M = metrics(x.o,x.gf,x.ga); return `<tr><td>${esc(x.oppName)}</td><td>${r0(M.passAcc)}%</td><td>${r0(M.tklRate)}%</td><td>${r0(M.sotRate)}%</td></tr>`; }).join("")}</table></details>
+    </div>` : ""}
+    ${seasonPlayersHTML(h)}
+    <div class="card"><h2>繰り返し出ている課題</h2>
+      ${recur.length ? recur.map(([t,c]) => `<div class="item"><div class="ic ${c/h.length>=.5?"bad":"warn"}">${c}</div><div><h3>${t}</h3><p>${h.length}試合中 ${c}試合で発生${c/h.length>=.5?" ・ 練習の最優先テーマにしましょう":""}</p></div></div>`).join("")
+        : `<p style="margin:0;color:var(--text-2)">繰り返し出ている課題はありません。</p>`}
+    </div>
+    <div class="card"><h2>試合一覧</h2>
+      ${h.map(x => { const r = x.gf>x.ga?"W":x.gf<x.ga?"L":"D"; return `<div class="hist-item" data-id="${x.id}"><div class="wdl ${r}">${r==="W"?"勝":r==="L"?"敗":"分"}</div><div class="t"><b>vs ${esc(x.oppName)}　${x.gf}-${x.ga}</b><span>${esc(x.date||"")} ${esc(x.comp||"")} ・ ${esc(x.oppSys)}</span></div><button class="del" data-del="${x.id}" aria-label="削除">×</button></div>`; }).join("")}
+      <p class="note">タップで分析を再表示。記録はこの端末のブラウザに保存されます。</p>
+    </div>`;
+
+  if (h.length >= 2) {
+    const grid = css("--line"), txt = css("--text-2");
+    const ds = (label, key, color) => ({label, data: chron.map(x => r0(metrics(x.o,x.gf,x.ga)[key])), borderColor:color, backgroundColor:color, borderWidth:2, pointRadius:4, pointHoverRadius:6, tension:.25});
+    histChart = new Chart($("#trendC"), {
+      type:"line",
+      data:{ labels: chron.map(x => x.oppName.slice(0,6)), datasets:[ds("パス成功率","passAcc",css("--own")), ds("タックル成功率","tklRate",css("--opp")), ds("枠内シュート率","sotRate",css("--s3"))]},
+      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:"index", intersect:false},
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:c => `${c.dataset.label}: ${c.raw}%`}}},
+        scales:{ y:{min:0,max:100, ticks:{color:txt, callback:v => v+"%", stepSize:25}, grid:{color:grid}, border:{display:false}},
+                 x:{ticks:{color:txt, font:{family:"Noto Sans JP"}}, grid:{display:false}}}}
+    });
+  }
+}
+let histSort = "goal";
+const SORTS = {goal:"得点", assist:"アシスト", avg:"平均評価", steal:"ボール奪取", mvp:"MVP"};
+function seasonPlayersHTML(h){
+  const agg = {};
+  h.forEach(x => {
+    const rp = ratedPlayers(x);
+    rp.forEach((p, i) => {
+      const a = agg[p.id] ||= {name:p.name, num:p.num, pos:p.pos, gp:0, min:0, goal:0, assist:0, shot:0, sot:0, steal:0, lost:0, rs:0, mvp:0};
+      a.gp++; a.min += p.s.min; a.goal += p.s.goal; a.assist += p.s.assist; a.shot += p.s.shot; a.sot += p.s.sot;
+      a.steal += p.s.tklW + p.s.intc; a.lost += p.s.lost; a.rs += p.r; if (i === 0) a.mvp++;
+    });
+  });
+  const list = Object.values(agg).map(a => ({...a, avg: a.rs / a.gp}));
+  if (!list.length) return `<div class="card"><h2>選手の通算成績</h2><p style="margin:0;color:var(--text-2);font-size:13px">選手別の記録がある試合を保存すると、得点ランキングや平均評価が出ます。</p></div>`;
+  list.sort((a,b) => (b[histSort] - a[histSort]) || (b.avg - a.avg));
+  const top = k => { const t = [...list].sort((a,b) => b[k]-a[k])[0]; return t[k] > 0 ? `${esc(t.name)}（${k==="avg"?t.avg.toFixed(1):t[k]}）` : "—"; };
+  return `<div class="card"><h2>選手の通算成績</h2>
+    <div class="hl">
+      <div><span>得点王</span><b>${top("goal")}</b></div>
+      <div><span>アシスト王</span><b>${top("assist")}</b></div>
+      <div><span>平均評価トップ</span><b>${top("avg")}</b></div>
+      <div><span>MVP最多</span><b>${top("mvp")}</b></div>
+    </div>
+    <div class="sortbar">${Object.entries(SORTS).map(([k,n]) => `<button class="chip${histSort===k?" on":""}" data-sort="${k}">${n}順</button>`).join("")}</div>
+    <div class="scroll"><table class="ptbl"><tr><th>選手</th><th>試合</th><th>出場分</th><th>得点</th><th>アシスト</th><th>シュート</th><th>枠内率</th><th>奪取</th><th>ロスト</th><th>平均評価</th><th>MVP</th></tr>
+    ${list.map(a => `<tr><td><b>${esc(a.num??"")}</b> ${esc(a.name)} <span style="font-size:10px;color:var(--muted)">${a.pos}</span></td><td>${a.gp}</td><td>${a.min||"—"}</td><td><b>${a.goal}</b></td><td><b>${a.assist}</b></td><td>${a.shot}</td><td>${a.shot?r0(pct(a.sot,a.shot))+"%":"—"}</td><td>${a.steal}</td><td>${a.lost}</td><td><b>${a.avg.toFixed(1)}</b></td><td>${a.mvp||""}</td></tr>`).join("")}
+    </table></div></div>`;
+}
+let histChart = null;
+function destroyHistChart(){ if (histChart){ histChart.destroy(); histChart = null; } }
+
+$("#historyBody").addEventListener("click", e => {
+  const so = e.target.closest("[data-sort]");
+  if (so) { histSort = so.dataset.sort; renderHistory(); return; }
+  const del = e.target.closest("[data-del]");
+  if (del) {
+    e.stopPropagation();
+    if (del.dataset.confirm) {
+      store.set("sma_hist", store.get("sma_hist", []).filter(x => String(x.id) !== del.dataset.del));
+      renderHistory(); toast("削除しました");
+    } else { del.dataset.confirm = "1"; del.textContent = "削除?"; del.style.fontSize = "12px"; del.style.color = "var(--bad)"; setTimeout(() => { if (del.isConnected){ delete del.dataset.confirm; del.textContent = "×"; del.style = ""; } }, 2500); }
+    return;
+  }
+  const it = e.target.closest(".hist-item");
+  if (it) { const m = store.get("sma_hist", []).find(x => String(x.id) === it.dataset.id); if (m){ renderAnalysis(m); go("analysis"); } }
+});
+
+/* ---------- tabs ---------- */
+function go(tab){
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "v-" + tab));
+  $(".actions").style.display = tab === "input" ? "" : "none";
+  if (tab === "history") renderHistory();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => go(b.dataset.tab)));
+
+$("#analyzeBtn").onclick = () => {
+  const m = readForm();
+  if (m.o.passC > m.o.passA || m.p.passC > m.p.passA) { toast("パス成功がパス本数より多くなっています"); return; }
+  if (m.o.sot > m.o.shots || m.p.sot > m.p.shots) { toast("枠内シュートがシュート数より多くなっています"); return; }
+  if (m.o.tklW > m.o.tklA || m.p.tklW > m.p.tklA) { toast("タックル成功がタックル数より多くなっています"); return; }
+  renderAnalysis(m); go("analysis");
+};
+
+/* ---------- backup ---------- */
+$("#bkSave").onclick = async () => {
+  const data = {app:"soccer-match-analysis", v:1, savedAt:new Date().toISOString(), roster: store.get("sma_roster", []), hist: store.get("sma_hist", [])};
+  const name = `試合分析バックアップ_${new Date().toISOString().slice(0,10)}.json`;
+  const blob = new Blob([JSON.stringify(data)], {type:"application/json"});
+  try {
+    const file = new File([blob], name, {type:"application/json"});
+    if (navigator.canShare && navigator.canShare({files:[file]})) { await navigator.share({files:[file], title:name}); return; }
+  } catch(e){ if (e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast("バックアップを保存しました");
+};
+$("#bkLoad").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (d.app !== "soccer-match-analysis") throw new Error("format");
+    const r = store.get("sma_roster", []), h = store.get("sma_hist", []);
+    (d.roster || []).forEach(x => { const i = r.findIndex(y => y.id === x.id); if (i >= 0) r[i] = x; else r.push(x); });
+    (d.hist || []).forEach(x => { const i = h.findIndex(y => y.id === x.id); if (i >= 0) h[i] = x; else h.push(x); });
+    h.sort((a,b) => (b.date||"").localeCompare(a.date||"") || b.id - a.id);
+    store.set("sma_roster", r); store.set("sma_hist", h);
+    roster = r; renderRoster(); renderHistory();
+    toast(`復元しました（試合${(d.hist||[]).length}件・選手${(d.roster||[]).length}人）`);
+  } catch(err){ toast("このファイルは読み込めませんでした"); }
+  e.target.value = "";
+};
+
+/* ---------- init ---------- */
+const draft = store.get("sma_draft", null);
+if (draft) writeForm(draft); else { $("#date").value = new Date().toISOString().slice(0,10); renderRoster(); }
+})();
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+</script>
+</body>
+</html>
