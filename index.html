@@ -36,6 +36,7 @@
   }
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{margin:0;font-family:"Noto Sans JP",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
 header{background:linear-gradient(135deg,var(--pitch),var(--pitch-2));color:#fff;padding:calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 0 calc(16px + env(safe-area-inset-left));position:sticky;top:0;z-index:10}
 header h1{margin:0 0 12px;font-size:19px;font-weight:900;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
@@ -211,6 +212,59 @@ table.ptbl input[type=checkbox]{width:18px;height:18px}
 .step.locked button{opacity:.3;cursor:default}
 .step.locked input{color:var(--own)}
 .poss-row{background:var(--surface-2);margin:0 -8px;padding:8px;border-radius:10px}
+/* live recording */
+.seg{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;border:0;background:transparent;font:inherit;font-weight:700;font-size:14px;padding:9px;border-radius:8px;color:var(--text-2);cursor:pointer}
+.seg button.on{background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.seg button.on[data-side=o]{color:var(--own)}
+.seg button.on[data-side=p]{color:var(--opp)}
+.pp{margin-bottom:12px}
+.pp .gl{text-align:center;font-size:11px;font-weight:700;color:var(--text-2);padding:2px 0}
+.pitch{position:relative;background:repeating-linear-gradient(0deg,#2f7d4a 0 23px,#2a7243 23px 46px);border:2px solid rgba(255,255,255,.9);border-radius:6px;overflow:hidden}
+.pitch .ln{position:absolute;border-color:rgba(255,255,255,.75);border-style:solid;border-width:0;pointer-events:none}
+.pitch .half{left:0;right:0;top:50%;border-top-width:2px}
+.pitch .circ{left:50%;top:50%;width:40px;height:40px;border-width:2px;border-radius:50%;transform:translate(-50%,-50%)}
+.pitch .boxT{top:0;left:24%;right:24%;height:20%;border-width:0 2px 2px}
+.pitch .boxB{bottom:0;left:24%;right:24%;height:20%;border-width:2px 2px 0}
+.pgrid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,46px)}
+.pgrid button{background:transparent;border:1px dashed rgba(255,255,255,.35);color:rgba(255,255,255,.92);font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.4);padding:0}
+.pgrid button.on{background:rgba(255,213,0,.9);color:#111;border:2px solid #fff;text-shadow:none}
+.heat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.heat .t{font-size:11.5px;font-weight:700;color:var(--text-2);text-align:center;margin-bottom:3px}
+.heat .pgrid{grid-template-rows:repeat(3,34px)}
+.heat .hc{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:15px;text-shadow:0 1px 2px rgba(0,0,0,.5);border:1px dashed rgba(255,255,255,.25)}
+.zone{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.zone>span{font-size:12px;font-weight:700;color:var(--text-2);flex:none;width:44px;line-height:1.2}
+.zone button{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--text);font:inherit;font-weight:700;font-size:14px;padding:9px 4px;border-radius:10px;cursor:pointer}
+.zone button.on{background:var(--text);color:var(--surface);border-color:var(--text)}
+.act.r{background:var(--bad);color:#fff;border-color:transparent}
+.pchip.opp.sel{border-color:var(--opp);box-shadow:0 0 0 2px var(--opp) inset}
+.pchip.opp .no{background:var(--opp);color:#fff}
+.oppadd{display:flex;gap:6px;margin:-4px 0 12px}
+.oppadd input{flex:1;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);min-width:0}
+.clockbar{display:flex;align-items:center;gap:6px;background:var(--surface-2);border-radius:10px;padding:6px 6px 6px 12px;margin-bottom:12px}
+.clockbar .ct{font-weight:900;font-size:15px;flex:1;font-variant-numeric:tabular-nums}
+.clockbar .btn{padding:7px 10px;font-size:12.5px;background:var(--surface)}
+.live-top{text-align:center}
+.live-top .ct{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.2}
+.live-top .sc{font-size:20px;font-weight:900;margin:2px 0 10px}
+.live-top .row-btns{justify-content:center}
+.qs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.qs div{background:var(--surface-2);border-radius:10px;padding:8px 4px;text-align:center}
+.qs>div>span{display:block;font-size:11px;color:var(--text-2);font-weight:700}
+.qs b{font-size:14px}
+.qs b .o{color:var(--own)} .qs b .p{color:var(--opp)}
+.mom{display:flex;height:12px;gap:2px;margin:8px 0 4px}
+.mom div{height:100%}
+.mom .o{background:var(--own);border-radius:4px 0 0 4px}
+.mom .p{background:var(--opp);border-radius:0 4px 4px 0}
+.say{display:flex;gap:10px;align-items:flex-start;font-size:17px;font-weight:900;line-height:1.5;padding:10px 0;border-bottom:1px solid var(--surface-2)}
+.say:last-child{border-bottom:0}
+.say .n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--pitch-2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;margin-top:2px}
+.zgrid{display:grid;grid-template-columns:76px repeat(3,1fr);gap:4px;font-size:12px;align-items:stretch}
+.zgrid .h{font-weight:700;color:var(--text-2);text-align:center;padding:2px 0}
+.zgrid .zl{font-weight:700;color:var(--text-2);display:flex;align-items:center;line-height:1.25}
+.zgrid .c{border-radius:8px;padding:8px 2px;text-align:center;font-weight:900;font-size:16px;border:1px solid var(--line)}
 @media (max-width:420px){
   .stat-head,.stat-row{grid-template-columns:1fr 112px 112px}
   .step button{width:32px}
@@ -225,8 +279,9 @@ table.ptbl input[type=checkbox]{width:18px;height:18px}
   </h1>
   <nav>
     <button data-tab="input" class="active">データ入力</button>
+    <button data-tab="live">試合中</button>
     <button data-tab="analysis">分析・戦評</button>
-    <button data-tab="history">履歴・傾向</button>
+    <button data-tab="history">履歴</button>
   </nav>
 </header>
 
@@ -265,11 +320,18 @@ table.ptbl input[type=checkbox]{width:18px;height:18px}
   </div>
 
   <div class="card" id="playerCard">
-    <h2>選手別記録 <span class="tag">選手を選んでプレーをタップ</span></h2>
+    <h2>プレー記録 <span class="tag">場所→選手→プレーの順にタップ</span></h2>
+    <div class="clockbar"><span class="ct clockTxt">⏱ 未開始</span><button class="btn small clockToggle">▶ 開始</button><button class="btn small clockHalf">後半へ</button></div>
+    <div class="seg" id="sideSeg"><button data-side="o" class="on">自チーム</button><button data-side="p">相手</button></div>
+    <div class="pp"><div class="gl">▲ 相手ゴール（攻める方向）</div>
+      <div class="pitch"><span class="ln half"></span><span class="ln circ"></span><span class="ln boxT"></span><span class="ln boxB"></span>
+        <div class="pgrid" id="zoneSeg"><button data-z="AL">敵陣・左</button><button data-z="AC">敵陣・中央</button><button data-z="AR">敵陣・右</button><button data-z="ML">中盤・左</button><button data-z="MC">中盤・中央</button><button data-z="MR">中盤・右</button><button data-z="DL">自陣・左</button><button data-z="DC">自陣・中央</button><button data-z="DR">自陣・右</button></div></div>
+      <div class="gl">自分のゴール ▼</div></div>
     <div id="pchips" class="pchips"></div>
+    <div class="oppadd" id="oppAdd" hidden><input type="number" id="oppNo" placeholder="相手の背番号を追加" inputmode="numeric"><button class="btn ghost small" id="oppAddBtn">追加</button></div>
     <div class="acts" id="acts"></div>
     <div class="logbar"><span id="lastLog">選手を選んでください</span><button class="btn ghost small" id="undoBtn" disabled>取り消し</button></div>
-    <p class="note" style="margin-top:0">タップした記録はチームのスタッツにも自動で加算されます。</p>
+    <p class="note" style="margin-top:0">タップした記録はチームのスタッツにも自動で加算されます。場所はコート図をタップして選びます（上が相手ゴール。もう一度タップで解除。選んだ場所は変えるまでそのまま）。相手のプレーは背番号なしでも記録できます。</p>
     <details id="ptblWrap"><summary>個人スタッツ一覧・直接修正</summary>
       <div class="scroll"><table class="ptbl" id="ptbl"></table></div>
       <p class="note">ここで直した数字はチームのスタッツには入りません。合わせたいときは下のボタンを押してください。</p>
@@ -306,6 +368,10 @@ table.ptbl input[type=checkbox]{width:18px;height:18px}
 </section>
 
 <!-- ============ ANALYSIS ============ -->
+<section class="view" id="v-live">
+  <div id="liveBody"></div>
+</section>
+
 <section class="view" id="v-analysis">
   <div id="analysisBody"><div class="empty">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
@@ -429,7 +495,7 @@ function confirmTap(btn, fn){
 /* ---------- players ---------- */
 const PS = [
   {k:"min",n:"出場分"},{k:"goal",n:"得点"},{k:"assist",n:"アシスト"},{k:"shot",n:"シュート"},{k:"sot",n:"枠内"},
-  {k:"keyP",n:"キーパス"},{k:"tklA",n:"タックル"},{k:"tklW",n:"成功"},{k:"intc",n:"カット"},{k:"lost",n:"ロスト"},
+  {k:"keyP",n:"キーパス"},{k:"drib",n:"突破"},{k:"cross",n:"クロス"},{k:"tklA",n:"タックル"},{k:"tklW",n:"成功"},{k:"intc",n:"カット"},{k:"lost",n:"ロスト"},
   {k:"foul",n:"ファール"},{k:"yc",n:"警告"},{k:"save",n:"セーブ"}
 ];
 const ACTIONS = [
@@ -438,6 +504,8 @@ const ACTIONS = [
   {id:"off",   n:"枠外シュート", p:{shot:1}, t:{o_shots:1}},
   {id:"assist",n:"アシスト",     p:{assist:1,keyP:1}, t:{o_assist:1,o_keyP:1}},
   {id:"keyP",  n:"キーパス",     p:{keyP:1}, t:{o_keyP:1}},
+  {id:"drib",  n:"突破成功",     p:{drib:1}, t:{}},
+  {id:"cross", n:"クロス",       p:{cross:1}, t:{o_cross:1}},
   {id:"tklW",  n:"タックル成功", p:{tklA:1,tklW:1}, t:{o_tklA:1,o_tklW:1}},
   {id:"tklL",  n:"タックル失敗", p:{tklA:1}, t:{o_tklA:1}},
   {id:"intc",  n:"パスカット",   p:{intc:1}, t:{o_intc:1}},
@@ -446,6 +514,24 @@ const ACTIONS = [
   {id:"yc",    n:"警告",         p:{yc:1}, t:{o_yc:1}},
   {id:"save",  n:"GKセーブ",     p:{save:1}, t:{o_save:1}}
 ];
+const OPP_ACTIONS = [
+  {id:"goal",  n:"⚽ 失点",        cls:"r", k:{goal:1,shot:1,sot:1}, t:{ga:1,p_shots:1,p_sot:1}},
+  {id:"sot",   n:"枠内シュート",  k:{shot:1,sot:1}, t:{p_shots:1,p_sot:1}},
+  {id:"off",   n:"枠外シュート",  k:{shot:1}, t:{p_shots:1}},
+  {id:"drib",  n:"突破された",    k:{drib:1}, t:{}},
+  {id:"keyP",  n:"キーパス",      k:{keyP:1}, t:{p_keyP:1}},
+  {id:"cross", n:"クロス",        k:{cross:1}, t:{p_cross:1}},
+  {id:"steal", n:"奪われた", k:{steal:1}, t:{p_tklA:1,p_tklW:1}},
+  {id:"foul",  n:"ファール",      k:{foul:1}, t:{p_foul:1}},
+  {id:"yc",    n:"警告",          k:{yc:1}, t:{p_yc:1}},
+  {id:"ck",    n:"CK",            k:{ck:1}, t:{p_ck:1}},
+  {id:"offs",  n:"オフサイド",    k:{offs:1}, t:{p_off:1}}
+];
+const ZN = {L:"左", C:"中央", R:"右"}, ZROW = {A:"敵陣", M:"中盤", D:"自陣"};
+const colOf = z => z ? z.slice(-1) : null, rowOf = z => z && z.length === 2 ? z[0] : null;
+const zoneName = z => !z ? "" : rowOf(z) ? `${ZROW[rowOf(z)]}・${ZN[colOf(z)]}` : ZN[colOf(z)];
+let side = "o", selZone = null, selOpp = null, oppNos = [], events = [];
+let clock = {acc:0, start:null, half:1, h2:0};
 const POS_ORDER = {GK:0,DF:1,MF:2,FW:3,"未定":4};
 const CLUB_ROSTER = [];   // 公開版には名簿を入れない（バックアップファイルから復元）
 function importClubRoster(){
@@ -471,6 +557,15 @@ const pLabel = p => `${p.num!==""&&p.num!=null?"#"+p.num+" ":""}${p.name}`;
 
 function renderPChips(){
   const el = $("#pchips");
+  document.querySelectorAll("#sideSeg button").forEach(b => b.classList.toggle("on", b.dataset.side === side));
+  document.querySelectorAll("#zoneSeg button").forEach(b => b.classList.toggle("on", b.dataset.z === selZone));
+  $("#oppAdd").hidden = side !== "p";
+  if (side === "p") {
+    el.innerHTML = `<button class="pchip opp${selOpp===null?" sel":""}" data-opp=""><span class="no">−</span>番号なし</button>` +
+      [...oppNos].sort((a,b) => a-b).map(n => `<button class="pchip opp${selOpp===n?" sel":""}" data-opp="${esc(n)}"><span class="no">${esc(n)}</span>相手</button>`).join("");
+    $("#acts").innerHTML = OPP_ACTIONS.map(a => `<button class="act ${a.cls||""}" data-oact="${a.id}">${a.n}</button>`).join("");
+    return;
+  }
   if (!roster.length) { el.innerHTML = `<p class="note" style="margin:0">下の「選手の登録・編集」から選手を登録するか、「履歴・傾向」タブの一番下の「バックアップから復元」で選手名簿を読み込んでください。</p>`; }
   else el.innerHTML = sortedRoster().map(r => {
     const st = curP[r.id];
@@ -492,6 +587,11 @@ function renderRoster(){ renderPChips(); renderPtbl(); renderRosterList(); }
 
 $("#pchips").addEventListener("click", e => {
   const c = e.target.closest(".pchip"); if (!c) return;
+  if (c.dataset.opp !== undefined) {
+    selOpp = c.dataset.opp === "" ? null : c.dataset.opp;
+    $("#lastLog").textContent = selOpp ? `相手 #${selOpp} を選択中` : "相手（番号なし）を選択中";
+    renderPChips(); return;
+  }
   selP = selP === c.dataset.pid ? null : c.dataset.pid;
   const r = roster.find(x => x.id === selP);
   $("#lastLog").textContent = r ? `${pLabel(r)} を選択中` : "選手を選んでください";
@@ -506,14 +606,36 @@ $("#acts").addEventListener("click", e => {
   st.on = true;
   for (const [k, v] of Object.entries(a.p)) st.s[k] += v;
   bumpTeam(a.t, 1);
-  undoStack.push({pid:selP, a});
-  $("#lastLog").textContent = `${pLabel(r)}：${a.n.replace("⚽ ","")} を記録`;
+  const ev = {s:"o", a:a.id, pid:selP, z:selZone, et:clockEt(), h:clock.half};
+  events.push(ev);
+  undoStack.push({pid:selP, a, ev});
+  $("#lastLog").textContent = `${pLabel(r)}：${a.n.replace("⚽ ","")}${selZone?`（${zoneName(selZone)}）`:""} を記録`;
   $("#undoBtn").disabled = false;
   if (navigator.vibrate) try { navigator.vibrate(15); } catch(_){}
   renderPChips(); renderPtbl(); saveDraft();
 });
+$("#acts").addEventListener("click", e => {
+  const b = e.target.closest("[data-oact]"); if (!b) return;
+  const a = OPP_ACTIONS.find(x => x.id === b.dataset.oact);
+  bumpTeam(a.t, 1);
+  if (selOpp && !oppNos.includes(selOpp)) oppNos.push(selOpp);
+  const ev = {s:"p", a:a.id, no:selOpp, z:selZone, et:clockEt(), h:clock.half};
+  events.push(ev);
+  undoStack.push({opp:true, a, ev});
+  $("#lastLog").textContent = `相手${selOpp?" #"+selOpp:""}：${a.n.replace("⚽ ","")}${selZone?`（${zoneName(selZone)}）`:""} を記録`;
+  $("#undoBtn").disabled = false;
+  if (navigator.vibrate) try { navigator.vibrate(15); } catch(_){}
+  saveDraft();
+});
+function dropEvent(ev){ const i = events.lastIndexOf(ev); if (i >= 0) events.splice(i, 1); }
 $("#undoBtn").onclick = () => {
   const u = undoStack.pop(); if (!u) return;
+  if (u.ev) dropEvent(u.ev);
+  if (u.opp) {
+    bumpTeam(u.a.t, -1);
+    $("#lastLog").textContent = `取り消し：相手 ${u.a.n.replace("⚽ ","")}`;
+    $("#undoBtn").disabled = !undoStack.length; saveDraft(); return;
+  }
   const st = pState(u.pid), r = roster.find(x => x.id === u.pid);
   for (const [k, v] of Object.entries(u.a.p)) st.s[k] = Math.max(0, st.s[k] - v);
   bumpTeam(u.a.t, -1);
@@ -521,6 +643,50 @@ $("#undoBtn").onclick = () => {
   $("#undoBtn").disabled = !undoStack.length;
   renderPChips(); renderPtbl(); saveDraft();
 };
+$("#sideSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  side = b.dataset.side;
+  $("#lastLog").textContent = side === "p" ? (selOpp ? `相手 #${selOpp} を選択中` : "相手（番号なし）を選択中") : "選手を選んでください";
+  renderPChips();
+});
+$("#zoneSeg").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  selZone = selZone === b.dataset.z ? null : b.dataset.z; renderPChips();
+});
+$("#oppAddBtn").onclick = () => {
+  const n = $("#oppNo").value.trim(); if (!n) return;
+  if (!oppNos.includes(n)) oppNos.push(n);
+  selOpp = n; $("#oppNo").value = ""; renderPChips(); saveDraft();
+  $("#lastLog").textContent = `相手 #${n} を選択中`;
+};
+
+/* match clock */
+const clockMs = () => clock.acc + (clock.start ? Date.now() - clock.start : 0);
+const clockUsed = () => !!(clock.start || clock.acc);
+const clockEt = () => clockUsed() ? clockMs() : null;
+function clockLabel(){
+  if (!clockUsed()) return "⏱ 未開始";
+  const ms = clockMs() - (clock.half === 2 ? clock.h2 : 0);
+  const mm = Math.floor(ms / 60000), ss = Math.floor(ms / 1000) % 60;
+  return `⏱ ${clock.half === 2 ? "後半" : "前半"} ${mm}:${String(ss).padStart(2,"0")}${clock.start ? "" : "（停止中）"}`;
+}
+function renderClock(){
+  document.querySelectorAll(".clockTxt").forEach(el => el.textContent = clockLabel());
+  document.querySelectorAll(".clockToggle").forEach(b => b.textContent = clock.start ? "⏸ 止める" : (clockUsed() ? "▶ 再開" : "▶ 開始"));
+  document.querySelectorAll(".clockHalf").forEach(b => { b.hidden = clock.half === 2; });
+}
+document.addEventListener("click", e => {
+  if (e.target.closest(".clockToggle")) {
+    if (clock.start) { clock.acc += Date.now() - clock.start; clock.start = null; } else clock.start = Date.now();
+    renderClock(); saveDraft();
+  } else if (e.target.closest(".clockHalf")) {
+    if (clock.start) { clock.acc += Date.now() - clock.start; }
+    clock.half = 2; clock.h2 = clock.acc; clock.start = Date.now();
+    renderClock(); saveDraft(); toast("後半スタート");
+  }
+});
+setInterval(() => { if (clock.start) renderClock(); }, 1000);
+
 $("#ptbl").addEventListener("input", e => {
   const t = e.target;
   if (t.dataset.on) { pState(t.dataset.on).on = t.checked; renderPChips(); return; }
@@ -556,7 +722,7 @@ $("#rosterList").addEventListener("click", e => {
 /* player rating & comments */
 function rating(p, m){
   const s = {...blankS(), ...p.s};
-  let r = 6.0 + s.goal*1.0 + s.assist*0.7 + Math.max(0, s.keyP - s.assist)*0.25 + Math.max(0, s.sot - s.goal)*0.15
+  let r = 6.0 + s.goal*1.0 + s.assist*0.7 + Math.max(0, s.keyP - s.assist)*0.25 + s.drib*0.1 + Math.max(0, s.sot - s.goal)*0.15
         - Math.max(0, s.shot - s.sot)*0.05 + s.tklW*0.15 - Math.max(0, s.tklA - s.tklW)*0.08 + s.intc*0.15
         - s.lost*0.06 - s.foul*0.1 - s.yc*0.5 + s.save*0.3;
   r += m.gf > m.ga ? 0.3 : m.gf < m.ga ? -0.2 : 0;
@@ -584,7 +750,7 @@ function pComment(p){
 function statLine(p){
   const s = {...blankS(), ...p.s};
   return [s.goal?`${s.goal}得点`:"", s.assist?`${s.assist}アシスト`:"", s.shot?`シュート${s.shot}（枠内${s.sot}）`:"",
-    s.keyP?`キーパス${s.keyP}`:"", (s.tklW+s.intc)?`奪取${s.tklW+s.intc}`:"", s.lost?`ロスト${s.lost}`:"",
+    s.keyP?`キーパス${s.keyP}`:"", s.drib?`突破${s.drib}`:"", (s.tklW+s.intc)?`奪取${s.tklW+s.intc}`:"", s.lost?`ロスト${s.lost}`:"",
     s.foul?`ファール${s.foul}`:"", s.save?`セーブ${s.save}`:"", s.min?`${s.min}分`:""].filter(Boolean).join(" ・ ") || "記録なし";
 }
 
@@ -660,6 +826,7 @@ function readForm(){
     const st = curP[r.id];
     return st && st.on ? {id:r.id, num:r.num, name:r.name, pos:r.pos, s:{...st.s}} : null;
   }).filter(Boolean);
+  m.events = events.slice(); m.oppNos = oppNos.slice(); m.clock = {...clock};
   return m;
 }
 function writeForm(m){
@@ -682,7 +849,9 @@ function writeForm(m){
     curP[p.id] = {on:true, s:{...blankS(), ...p.s}};
   });
   if (added) saveRoster();
-  renderRoster();
+  events = (m.events || []).slice(); oppNos = (m.oppNos || []).slice(); selOpp = null; selZone = null; side = "o";
+  clock = {acc:0, start:null, half:1, h2:0, ...(m.clock || {})};
+  renderRoster(); renderClock();
 }
 let draftTimer;
 function saveDraft(){ clearTimeout(draftTimer); draftTimer = setTimeout(() => store.set("sma_draft", readForm()), 300); }
@@ -707,6 +876,15 @@ const SAMPLE = {
     {id:"s_11",num:"11",name:"山田", pos:"FW", s:{min:60,shot:3,tklA:1,lost:3}}
   ]
 };
+function sampleEvents(){
+  const ev = [], add = (mi, sd, a, z, extra) => ev.push({s:sd, a, z, et:mi*60000, h: mi >= 30 ? 2 : 1, ...extra});
+  [[3,"drib","MR"],[5,"cross","AR"],[8,"off","AR"],[10,"intc","AC"],[12,"lost","DL"],[14,"lost","ML"],[17,"keyP","AR"],[18,"sot","AC"],[22,"lost","MC"],[25,"drib","AR"],[27,"goal","AC"],[30,"tklW","AR"],[33,"lost","DL"],[36,"off","AC"],[41,"lost","ML"],[44,"drib","AR"],[47,"cross","AR"],[52,"lost","DC"]]
+    .forEach(([mi,a,z]) => add(mi, "o", a, z, {pid:null}));
+  [[4,"drib","ML","10"],[9,"sot","DC","10"],[11,"foul","MC","4"],[15,"keyP","DL","10"],[16,"goal","DC","9"],[20,"cross","DL","7"],[24,"foul","AR","4"],[29,"ck",null,null],[31,"steal","ML","6"],[34,"drib","DL","10"],[37,"off","DC","9"],[42,"sot","DL","10"],[45,"goal","DC","10"],[48,"foul","MR","4"],[49,"yc","MR","4"],[50,"drib","DL","7"],[51,"sot","DC","10"],[53,"keyP","DL","10"],[53,"steal","ML","6"],[54,"steal","MC","6"]]
+    .forEach(([mi,a,z,no]) => add(mi, "p", a, z, {no}));
+  return ev.sort((a,b) => a.et - b.et);
+}
+SAMPLE.events = sampleEvents(); SAMPLE.oppNos = ["4","6","7","9","10"]; SAMPLE.clock = {acc:55*60000, start:null, half:2, h2:30*60000};
 $("#sampleBtn").onclick = () => {
   const sm = JSON.parse(JSON.stringify(SAMPLE));
   if (roster.length && !roster.some(r => String(r.id).startsWith("s_"))) sm.players = []; // 自分の選手登録がある時はサンプル選手を足さない
@@ -909,6 +1087,168 @@ function playersHTML(m){
   </div>`;
 }
 
+/* ---------- live / zone insights ---------- */
+const hexAlpha = (h, a) => { const n = parseInt(h.replace("#","").slice(0,6),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; };
+const EV_THREAT = {goal:3, sot:2, off:1, keyP:1, assist:1, drib:1, cross:0.5};
+const ATK_O = ["goal","sot","off","keyP","assist","drib","cross"], ATK_P = ["goal","sot","off","keyP","drib","cross"], SHOT = ["goal","sot","off"];
+function insights(m, opt = {}){
+  const evs = m.events || [], Z = ["L","C","R"], vs = VS[m.oppSys] || VS["不明"];
+  let recent, label;
+  if (opt.live && clockUsed() && evs.some(e => e.et != null)) { const now = clockMs(); recent = evs.filter(e => e.et != null && e.et >= now - 600000); label = "直近10分"; }
+  else if (opt.live) { recent = evs.slice(-15); label = "直近15プレー"; }
+  else { recent = evs; label = "試合全体"; }
+  const threat = (l, sd) => l.filter(e => e.s === sd).reduce((t, e) => t + (EV_THREAT[e.a] || 0), 0);
+  const cnt = (l, sd, acts) => l.filter(e => e.s === sd && acts.includes(e.a)).length;
+  const isLost = e => (e.s === "o" && e.a === "lost") || (e.s === "p" && e.a === "steal");
+  const momO = threat(recent, "o"), momP = threat(recent, "p");
+  const rShotO = cnt(recent, "o", SHOT), rShotP = cnt(recent, "p", SHOT), rLost = recent.filter(isLost).length;
+  const zc = f => Object.fromEntries(Z.map(z => [z, evs.filter(e => colOf(e.z) === z && f(e)).length]));
+  const CELLS = ["A","M","D"].flatMap(r => Z.map(c => r + c));
+  const zc9 = f => Object.fromEntries(CELLS.map(k => [k, evs.filter(e => e.z === k && f(e)).length]));
+  const topCell = (map, col) => { const ks = CELLS.filter(k => (!col || k[1] === col) && map[k] > 0).sort((a,b) => map[b] - map[a]); return ks.length && map[ks[0]] >= 2 ? ks[0] : null; };
+  const oppAtk = zc(e => e.s === "p" && ATK_P.includes(e.a)), ourAtk = zc(e => e.s === "o" && ATK_O.includes(e.a));
+  const ourShot = zc(e => e.s === "o" && SHOT.includes(e.a)), ourLost = zc(isLost);
+  const zoneTagged = evs.some(e => e.z);
+  const isWin = e => e.s === "o" && ["tklW","intc"].includes(e.a);
+  const h9 = {oppAtk: zc9(e => e.s === "p" && ATK_P.includes(e.a)), ourAtk: zc9(e => e.s === "o" && ATK_O.includes(e.a)), ourLost: zc9(isLost), ourWin: zc9(isWin)};
+  const rowSum = (map, r) => Z.reduce((t, c) => t + (map[r + c] || 0), 0);
+  const op = {};
+  evs.filter(e => e.s === "p" && e.no).forEach(e => {
+    const o = op[e.no] ||= {no:e.no, goal:0, shot:0, sot:0, keyP:0, drib:0, cross:0, steal:0, foul:0, yc:0};
+    const a = OPP_ACTIONS.find(x => x.id === e.a); if (a) for (const k in a.k) if (k in o) o[k] += a.k[k];
+  });
+  const oppList = Object.values(op).map(o => ({...o, danger: o.goal*3 + o.shot*1.5 + o.keyP + o.drib + o.cross*.5})).sort((a,b) => b.danger - a.danger);
+  const danger = [], attack = [], say = [];
+  const D = (lv, t, d, sy) => { danger.push({lv, t, d}); if (sy) say.push({lv, t:sy}); };
+  const A = (lv, t, d, sy) => { attack.push({lv, t, d}); if (sy) say.push({lv: lv - 0.5, t:sy}); };
+  const sum = o => Object.values(o).reduce((a,b) => a+b, 0);
+
+  // --- danger
+  if (clock.half === 2 && m.gf < m.ga) D(3, `${m.ga - m.gf}点ビハインドの後半`, "リスクを取って点を取りに行く時間帯。", "点を取りに行く。SBを高く上げ、後ろは3人で守る。シュートで終わる");
+  if (clock.half === 2 && m.gf > m.ga) D(2, "リードしている後半", "相手が前に出てくる時間帯。", "無理な縦パスはやめてボールを大事に。セットプレーの守備に集中");
+  if (momP - momO >= 3) D(3, `押し込まれている（${label}）`, `チャンスの数 自チーム${momO} 対 相手${momP}。`, "ラインを下げすぎない。クリアは外へ大きく、こぼれ球は全員で拾う");
+  if (rShotP >= 3 && rShotP > rShotO) D(3, `シュートを打たれ続けている（${label}で${rShotP}本）`, "ゴール前での寄せが遅れています。", "シュートを打つ相手に1歩寄せる。体を正面に入れてブロック");
+  const tP = sum(oppAtk);
+  if (tP >= 3) {
+    const z = Z.reduce((a,b) => oppAtk[b] > oppAtk[a] ? b : a);
+    const tc = topCell(h9.oppAtk, z);
+    if (oppAtk[z] / tP >= 0.5) D(oppAtk[z]/tP >= 0.6 ? 3 : 2, `相手は${ZN[z]}${z==="C"?"":"サイド"}から攻めてきている（${oppAtk[z]}回 / 全${tP}回）`,
+      (tc ? `特に「${zoneName(tc)}」で${h9.oppAtk[tc]}回。` : "") + (z === "C" ? "中央を割られています。" : `${ZN[z]}サイドで数的不利になっています。`),
+      z === "C" ? "中央を締める。ボランチ2人の間を空けず、縦パスに必ず寄せる" : `${ZN[z]}サイドはSBとサイドハーフの2人で対応。ボランチもスライド`);
+  }
+  const ownLostD = rowSum(h9.ourLost, "D");
+  if (ownLostD >= 2) D(3, `自陣でボールを失っている（${ownLostD}回）`, `ゴールに近い場所でのロストは失点に直結します。${topCell(h9.ourLost, null) && rowOf(topCell(h9.ourLost, null)) === "D" ? `特に「${zoneName(topCell(h9.ourLost, null))}」。` : ""}`, "自陣では無理につながない。危ないときは大きく蹴ってOK");
+  const oppInBox = rowSum(h9.oppAtk, "D");
+  if (oppInBox >= 4) D(2, `自陣深くまで攻め込まれている（${oppInBox}回）`, "相手のプレーが自陣の3分の1で多く起きています。", "相手を自陣に入れる前に、中盤で1人目が素早く寄せる");
+  oppList.filter(o => o.danger >= 3).slice(0, 2).forEach((o, i) => {
+    const parts = [o.goal?`得点${o.goal}`:"", o.shot?`シュート${o.shot}`:"", o.drib?`突破${o.drib}`:"", o.keyP?`キーパス${o.keyP}`:"", o.cross?`クロス${o.cross}`:""].filter(Boolean).join("・");
+    D(i === 0 ? 3 : 2, `相手の #${o.no} が危険（${parts}）`, "攻撃の中心になっています。", `相手#${o.no}に前を向かせない。一番近い選手がつき、2人目がカバー`);
+  });
+  if ((m.p.ck || 0) >= 4) D(2, `相手のCKが${m.p.ck}本`, "セットプレーからの失点に注意。", "CKはマークを確認。ニアとストーン役を固定");
+  if (rLost >= 5) D(2, `ボールロストが多い（${label}で${rLost}回）`, "奪われてからのカウンターが危険です。", "無理に前を向かずシンプルに。困ったら大きく外へ");
+  if (m.o.passA >= 20 && pct(m.o.passC, m.o.passA) < 65) D(2, `パス成功率 ${r0(pct(m.o.passC, m.o.passA))}%`, "つなぎでミスが多い。", "受ける前に首を振る。近くの味方がサポートに寄る");
+  const ycP = (m.players || []).filter(p => (p.s.yc || 0) > 0);
+  if (ycP.length) D(2, `警告を受けている選手：${ycP.map(p => pLabel(p)).join("、")}`, "2枚目で退場になると数的不利に。", `${ycP.map(p => "#" + p.num).join("・")}は無理なタックル禁止。後ろから足を出さない`);
+  (m.players || []).filter(p => (p.s.lost || 0) >= 5).sort((a,b) => b.s.lost - a.s.lost).slice(0, 2).forEach(p => D(1, `${pLabel(p)} のロストが${p.s.lost}回`, "受ける前の準備・判断を早く。"));
+  if (m.o.foul >= 10) D(1, `ファールが${m.o.foul}回`, "危険な位置でのFKに注意。");
+
+  // --- attack points
+  const tO = sum(ourAtk);
+  if (tO >= 3) {
+    const sc = z => ourAtk[z] + ourShot[z] - ourLost[z] * 0.5;
+    const best = Z.reduce((a,b) => sc(b) > sc(a) ? b : a);
+    if (ourAtk[best] >= 2) A(3, `${ZN[best]}${best==="C"?"":"サイド"}が効いている（チャンス${ourAtk[best]}・シュート${ourShot[best]}）`, (topCell(h9.ourAtk, best) ? `特に「${zoneName(topCell(h9.ourAtk, best))}」が効いています。` : "") + `${ZN[best]}からの攻撃が相手の弱いところです。`, `${ZN[best]}から攻め続ける。${best==="C"?"中央で前を向いて仕掛ける":"サイドで2対1を作る"}`);
+  }
+  Z.filter(z => ourLost[z] >= 3 && ourLost[z] > ourAtk[z]).forEach(z => A(2, `${ZN[z]}${z==="C"?"":"サイド"}はロストが多い（${ourLost[z]}回）`, "相手がここを狙って奪いに来ています。", `${ZN[z]}では無理をしない。逆サイドへ大きく展開`));
+  if (tP >= 3) {
+    const z = Z.reduce((a,b) => oppAtk[b] > oppAtk[a] ? b : a);
+    if (z !== "C" && oppAtk[z] / tP >= 0.5) A(2, `相手は${ZN[z]}サイドに人をかけている`, `${ZN[z]}サイドの相手の背後（上がった裏）が空きやすい。`, `奪ったら${ZN[z]}サイドの裏へ素早く運ぶ`);
+  }
+  const winA = rowSum(h9.ourWin, "A");
+  if (winA >= 2) A(3, `敵陣でボールを奪えている（${winA}回）`, "前からのプレスが効いています。奪ったらすぐシュートまで。", "前からのプレスを続ける。奪ったら3秒でシュートへ");
+  oppList.filter(o => o.foul >= 2 || o.yc).slice(0, 2).forEach(o => A(2, `相手 #${o.no} はファール${o.foul}${o.yc ? "・警告あり" : ""}`, "1対1で慎重になる・イライラしている可能性。", `相手#${o.no}のところで1対1を仕掛ける`));
+  oppList.filter(o => o.steal >= 3).slice(0, 1).forEach(o => D(2, `相手 #${o.no} にボールを奪われている（${o.steal}回）`, "ボールを奪うのがうまい選手です。", `相手#${o.no}の近くでは持ちすぎず、早めにはたく`));
+  if (m.o.shots >= 6 && pct(m.o.sot, m.o.shots) < 35) A(1, `枠内シュートが少ない（${m.o.sot}/${m.o.shots}）`, "打つ前の準備を。", "シュートは枠へ。打つ前にもう1タッチで体勢を整える");
+  A(1, `相手${m.oppSys}の狙いどころ`, `${vs.weak}。→ ${vs.plan}。`);
+
+  danger.sort((a,b) => b.lv - a.lv); attack.sort((a,b) => b.lv - a.lv);
+  const seen = new Set(), sayTop = say.sort((a,b) => b.lv - a.lv).filter(x => !seen.has(x.t) && seen.add(x.t)).slice(0, 3).map(x => x.t);
+  if (sayTop.length < 3) [vs.plan.split("。")[0], vs.def.split("。")[0]].forEach(t => { if (sayTop.length < 3 && t && !sayTop.includes(t)) sayTop.push(t); });
+  return {label, momO, momP, rShotO, rShotP, oppAtk, ourAtk, ourShot, ourLost, zoneTagged, h9, has9: evs.some(e => rowOf(e.z)), oppList, danger, attack, say: sayTop, hasEv: evs.length > 0};
+}
+function zoneGridHTML(I){
+  if (!I.zoneTagged) return `<p class="note" style="margin:0">プレー記録でコート図の場所をタップしてから記録すると、どこから攻められているか・どこが効いているかが出ます。</p>`;
+  const own = css("--own"), opp = css("--opp"), bad = css("--bad");
+  if (!I.has9) {   // 旧データ（左・中央・右だけ）
+    const row = (lbl, o, col) => { const mx = Math.max(1, ...Object.values(o));
+      return `<div class="zl">${lbl}</div>` + ["L","C","R"].map(z => `<div class="c" style="background:${o[z] ? hexAlpha(col, .1 + .45 * o[z] / mx) : "transparent"}">${o[z]}</div>`).join(""); };
+    return `<div class="zgrid"><div></div><div class="h">左</div><div class="h">中央</div><div class="h">右</div>${row("相手の攻撃", I.oppAtk, opp)}${row("自分の攻撃", I.ourAtk, own)}${row("自分のロスト", I.ourLost, bad)}</div>`;
+  }
+  const pitch = (title, map, col) => { const mx = Math.max(1, ...Object.values(map));
+    return `<div><div class="t">${title}</div><div class="pitch"><span class="ln half"></span><span class="ln circ" style="width:26px;height:26px"></span><span class="ln boxT"></span><span class="ln boxB"></span>
+      <div class="pgrid">${["A","M","D"].flatMap(r => ["L","C","R"].map(c => r + c)).map(k => `<div class="hc" style="background:${map[k] ? hexAlpha(col, .25 + .65 * map[k] / mx) : "transparent"}">${map[k] || ""}</div>`).join("")}</div></div></div>`; };
+  return `<div class="heat">${pitch("相手の攻撃", I.h9.oppAtk, opp)}${pitch("自分の攻撃", I.h9.ourAtk, own)}${pitch("自分のロスト", I.h9.ourLost, bad)}</div>
+    <p class="note">上が相手ゴール側（自分たちが攻める方向）。色が濃いほど回数が多い場所です。</p>`;
+}
+function oppTableHTML(I){
+  if (!I.oppList.length) return `<p class="note" style="margin:0">相手のプレーを背番号付きで記録すると、相手の危険な選手が分かります。</p>`;
+  return `<div class="scroll"><table class="ptbl"><tr><th>背番号</th><th>危険度</th><th>得点</th><th>シュート</th><th>突破</th><th>キーパス</th><th>クロス</th><th>奪取</th><th>ファール</th></tr>
+    ${I.oppList.map(o => `<tr><td><b>#${esc(o.no)}</b>${o.yc ? ' <span style="color:var(--warn);font-size:11px">警告</span>' : ""}</td><td><b>${o.danger.toFixed(1)}</b></td><td>${o.goal}</td><td>${o.shot}</td><td>${o.drib}</td><td>${o.keyP}</td><td>${o.cross}</td><td>${o.steal}</td><td>${o.foul}</td></tr>`).join("")}
+  </table></div>`;
+}
+const itemsHTML = (list, kind) => list.length ? list.map(x => `<div class="item"><div class="ic ${kind === "atk" ? "good" : x.lv >= 3 ? "bad" : "warn"}">${kind === "atk" ? "→" : "!"}</div><div><h3>${x.t}</h3><p>${x.d}</p></div></div>`).join("")
+  : `<p style="margin:0;color:var(--text-2);font-size:13px">${kind === "atk" ? "記録が増えると出てきます。" : "今のところ大きな危険はありません。"}</p>`;
+
+function renderLive(){
+  const m = readForm(), I = insights(m, {live:true});
+  const O = metrics(m.o, m.gf, m.ga), P = metrics(m.p, m.ga, m.gf);
+  const momS = (I.momO + I.momP) ? I.momO / (I.momO + I.momP) * 100 : 50;
+  const momTxt = I.momP - I.momO >= 3 ? "押し込まれている" : I.momO - I.momP >= 3 ? "押している" : "互角";
+  $("#liveBody").innerHTML = `
+    <div class="card live-top">
+      <div class="ct clockTxt">${clockLabel()}</div>
+      <div class="sc">${esc(m.ownName)} ${m.gf} - ${m.ga} ${esc(m.oppName)}</div>
+      <div class="row-btns"><button class="btn ghost small clockToggle"></button><button class="btn ghost small clockHalf">後半へ</button><button class="btn ghost small" id="liveRefresh">↻ 更新</button></div>
+      <div class="qs">
+        <div><span>支配率</span><b><span class="o">${m.o.poss}</span>-<span class="p">${m.p.poss}</span></b></div>
+        <div><span>シュート</span><b><span class="o">${m.o.shots}</span>-<span class="p">${m.p.shots}</span></b></div>
+        <div><span>枠内</span><b><span class="o">${m.o.sot}</span>-<span class="p">${m.p.sot}</span></b></div>
+        <div><span>パス成功率</span><b><span class="o">${r0(O.passAcc)}</span>-<span class="p">${r0(P.passAcc)}</span></b></div>
+      </div>
+    </div>
+    ${I.hasEv ? "" : `<div class="card"><p style="margin:0;font-size:13px;color:var(--text-2)">「データ入力」の<b>プレー記録</b>で、エリアや相手の背番号を付けて記録していくと、ここに「危ないところ」「攻めどころ」が詳しく出ます。今はスタッツと相手システムから判断しています。</p></div>`}
+    <div class="card">
+      <h2>選手への声かけ <span class="tag">まずこの3つ</span></h2>
+      ${I.say.map((t, i) => `<div class="say"><span class="n">${i+1}</span><span>${esc(t)}</span></div>`).join("")}
+      <div class="row-btns" style="margin-top:10px"><button class="btn ghost small" id="liveCopy">指示をコピー</button></div>
+    </div>
+    <div class="card">
+      <h2>流れ <span class="tag">${I.label}</span></h2>
+      <div style="font-weight:900;font-size:18px">${momTxt}</div>
+      <div class="mom"><div class="o" style="width:${momS}%"></div><div class="p" style="width:${100-momS}%"></div></div>
+      <div class="legend" style="margin:0"><span><i style="background:var(--own)"></i>自チーム チャンス度${I.momO}・シュート${I.rShotO}</span><span><i style="background:var(--opp)"></i>相手 チャンス度${I.momP}・シュート${I.rShotP}</span></div>
+    </div>
+    <div class="card"><h2>今危ないこと</h2>${itemsHTML(I.danger, "dng")}</div>
+    <div class="card"><h2>攻めどころ</h2>${itemsHTML(I.attack, "atk")}</div>
+    <div class="card"><h2>エリア別</h2>${zoneGridHTML(I)}</div>
+    <div class="card"><h2>相手選手</h2>${oppTableHTML(I)}</div>`;
+  renderClock();
+  $("#liveRefresh").onclick = () => { renderLive(); toast("更新しました"); };
+  $("#liveCopy").onclick = async () => {
+    const txt = [`【${clockLabel().replace("⏱ ","")} の指示】${m.ownName} ${m.gf}-${m.ga} ${m.oppName}`, "",
+      ...I.say.map((t, i) => `${i+1}. ${t}`), "", "■危ないこと", ...I.danger.slice(0,4).map(x => "・" + x.t), "", "■攻めどころ", ...I.attack.slice(0,4).map(x => "・" + x.t)].join("\n");
+    try { await navigator.clipboard.writeText(txt); toast("コピーしました"); } catch(e){ toast("コピーできませんでした"); }
+  };
+}
+setInterval(() => { if ($("#v-live").classList.contains("active")) renderLive(); }, 20000);
+function zoneCardHTML(m){
+  if (!(m.events || []).length) return "";
+  const I = insights(m);
+  return `<div class="card"><h2>エリア別・相手選手</h2>${zoneGridHTML(I)}
+    <h3 style="font-size:14px;margin:14px 0 6px">相手選手</h3>${oppTableHTML(I)}
+    ${I.attack.length > 1 ? `<h3 style="font-size:14px;margin:14px 0 0">攻めどころ</h3>${itemsHTML(I.attack.slice(0, -1), "atk")}` : ""}</div>`;
+}
+
 /* ---------- render analysis ---------- */
 let charts = [];
 function destroyCharts(){ charts.forEach(c => c.destroy()); charts = []; }
@@ -988,6 +1328,7 @@ function renderAnalysis(m){
     </div>
 
     ${playersHTML(m)}
+    ${zoneCardHTML(m)}
 
     <div class="card">
       <h2>次に勝つためのプラン</h2>
@@ -1140,6 +1481,7 @@ function go(tab){
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "v-" + tab));
   $(".actions").style.display = tab === "input" ? "" : "none";
   if (tab === "history") renderHistory();
+  if (tab === "live") renderLive();
   window.scrollTo(0,0);
 }
 document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => go(b.dataset.tab)));
