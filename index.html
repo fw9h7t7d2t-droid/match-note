@@ -146,6 +146,26 @@ input[type=text],input[type=date],select{width:100%;font:inherit;padding:10px 12
 .record div{background:var(--surface-2);border-radius:10px;padding:10px 4px}
 .record b{display:block;font-size:22px;font-weight:900}
 .record span{font-size:11px;color:var(--text-2);font-weight:700}
+.vsum{font-weight:900;font-size:16px;cursor:pointer}
+.vidwrap{background:#000;border-radius:10px;overflow:hidden;margin-top:10px}
+.vidwrap video{display:block;width:100%;max-height:34vh;background:#000}
+.vidwrap.float{position:fixed;left:0;right:0;margin:0 auto;max-width:760px;border-radius:0 0 10px 10px;z-index:9;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.vidwrap.float video{max-height:24vh}
+.vctl{display:flex;gap:4px;padding:6px;background:#111}
+.vctl button{flex:1;border:0;border-radius:8px;background:#2a2a2a;color:#fff;font:inherit;font-weight:700;font-size:13px;padding:9px 2px;cursor:pointer}
+.scene{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--surface-2);font-size:13px}
+.scene:last-child{border-bottom:0}
+.scene .tm{font-variant-numeric:tabular-nums;font-weight:900;min-width:48px}
+.scene .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.scene .tx{flex:1;min-width:0}
+.scene button{border:0;background:var(--surface-2);color:var(--text);font:inherit;font-size:12px;font-weight:700;border-radius:8px;padding:6px 9px;cursor:pointer}
+.scene .x{background:none;color:var(--muted);font-size:16px;padding:4px 6px}
+.posrow{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center;margin-bottom:10px}
+.posrow .pn{font-weight:900;font-size:14px}
+.posrow .bars{display:flex;flex-direction:column;gap:3px}
+.posrow .bl{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-2)}
+.posrow .bl span:first-child{width:40px;flex:none;white-space:nowrap}
+.posrow .bl .b{height:8px;border-radius:0 4px 4px 0;min-width:2px}
 .codebox{font-size:22px;font-weight:900;letter-spacing:.08em;text-align:center;background:var(--surface-2);border-radius:10px;padding:10px;margin:8px 0;font-variant-numeric:tabular-nums}
 .cloud-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
 .cloud-dot.on{background:var(--good)}
@@ -321,6 +341,23 @@ table.ptbl input[type=checkbox]{width:18px;height:18px}
     <div class="stat-head"><span>項目</span><span>自チーム</span><span>相手</span></div>
     <div id="statRows"></div>
   </div>
+
+  <details class="card" id="videoCard">
+    <summary class="vsum">🎬 試合動画を見ながら記録</summary>
+    <p class="note" style="margin-top:8px">動画を選ぶと、再生しながら下の「プレー記録」で記録できます。記録は動画の時間とつながるので、あとで「シーン一覧」からその場面に飛べます。動画そのものはアプリに保存されません（見返すときは同じ動画をもう一度選んでください）。</p>
+    <div class="row-btns" style="align-items:center"><label class="btn ghost small" style="cursor:pointer">動画を選ぶ<input type="file" id="vidFile" accept="video/*" hidden></label><span id="vidName" style="font-size:12px;color:var(--text-2)"></span></div>
+    <div id="vidSpacer"></div>
+    <div id="vidWrap" class="vidwrap" hidden>
+      <video id="vid" playsinline controls preload="metadata"></video>
+      <div class="vctl"><button data-vs="-10">−10秒</button><button data-vs="-3">−3秒</button><button id="vPlay">再生</button><button data-vs="3">＋3秒</button><button data-vs="10">＋10秒</button><button id="vRate">1x</button></div>
+    </div>
+    <label class="auto" id="vStickyWrap" hidden style="margin-top:8px"><input type="checkbox" id="vSticky" checked>スクロールしても動画を画面の上に固定する</label>
+    <h3 style="font-size:14px;margin:14px 0 6px">シーン一覧</h3>
+    <div class="chips" id="sceneFilter" style="margin-bottom:6px">
+      <button class="chip on" data-f="all">すべて</button><button class="chip" data-f="goal">得点・失点</button><button class="chip" data-f="shot">シュート</button><button class="chip" data-f="o">自チーム</button><button class="chip" data-f="p">相手</button>
+    </div>
+    <div id="sceneList"></div>
+  </details>
 
   <div class="card" id="playerCard">
     <h2>プレー記録 <span class="tag">場所→選手→プレーの順にタップ</span></h2>
@@ -605,31 +642,31 @@ function bumpTeam(t, sign){
   for (const [k, v] of Object.entries(t)) { const el = document.getElementById(k); if (el) el.value = Math.max(0, (+el.value||0) + v*sign); }
 }
 $("#acts").addEventListener("click", e => {
-  const b = e.target.closest(".act"); if (!b || !selP) return;
+  const b = e.target.closest("[data-act]"); if (!b || !selP) return;
   const a = ACTIONS.find(x => x.id === b.dataset.act), st = pState(selP), r = roster.find(x => x.id === selP);
   st.on = true;
   for (const [k, v] of Object.entries(a.p)) st.s[k] += v;
   bumpTeam(a.t, 1);
-  const ev = {s:"o", a:a.id, pid:selP, z:selZone, et:clockEt(), h:clock.half};
+  const ev = {s:"o", a:a.id, pid:selP, z:selZone, et:clockEt(), h:clock.half, vt:vidTime()};
   events.push(ev);
   undoStack.push({pid:selP, a, ev});
   $("#lastLog").textContent = `${pLabel(r)}：${a.n.replace("⚽ ","")}${selZone?`（${zoneName(selZone)}）`:""} を記録`;
   $("#undoBtn").disabled = false;
   if (navigator.vibrate) try { navigator.vibrate(15); } catch(_){}
-  renderPChips(); renderPtbl(); saveDraft();
+  renderPChips(); renderPtbl(); saveDraft(); renderScenes();
 });
 $("#acts").addEventListener("click", e => {
   const b = e.target.closest("[data-oact]"); if (!b) return;
   const a = OPP_ACTIONS.find(x => x.id === b.dataset.oact);
   bumpTeam(a.t, 1);
   if (selOpp && !oppNos.includes(selOpp)) oppNos.push(selOpp);
-  const ev = {s:"p", a:a.id, no:selOpp, z:selZone, et:clockEt(), h:clock.half};
+  const ev = {s:"p", a:a.id, no:selOpp, z:selZone, et:clockEt(), h:clock.half, vt:vidTime()};
   events.push(ev);
   undoStack.push({opp:true, a, ev});
   $("#lastLog").textContent = `相手${selOpp?" #"+selOpp:""}：${a.n.replace("⚽ ","")}${selZone?`（${zoneName(selZone)}）`:""} を記録`;
   $("#undoBtn").disabled = false;
   if (navigator.vibrate) try { navigator.vibrate(15); } catch(_){}
-  saveDraft();
+  saveDraft(); renderScenes();
 });
 function dropEvent(ev){ const i = events.lastIndexOf(ev); if (i >= 0) events.splice(i, 1); }
 $("#undoBtn").onclick = () => {
@@ -638,14 +675,14 @@ $("#undoBtn").onclick = () => {
   if (u.opp) {
     bumpTeam(u.a.t, -1);
     $("#lastLog").textContent = `取り消し：相手 ${u.a.n.replace("⚽ ","")}`;
-    $("#undoBtn").disabled = !undoStack.length; saveDraft(); return;
+    $("#undoBtn").disabled = !undoStack.length; saveDraft(); renderScenes(); return;
   }
   const st = pState(u.pid), r = roster.find(x => x.id === u.pid);
   for (const [k, v] of Object.entries(u.a.p)) st.s[k] = Math.max(0, st.s[k] - v);
   bumpTeam(u.a.t, -1);
   $("#lastLog").textContent = `取り消し：${r?pLabel(r):""} ${u.a.n.replace("⚽ ","")}`;
   $("#undoBtn").disabled = !undoStack.length;
-  renderPChips(); renderPtbl(); saveDraft();
+  renderPChips(); renderPtbl(); saveDraft(); renderScenes();
 };
 $("#sideSeg").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
@@ -663,6 +700,73 @@ $("#oppAddBtn").onclick = () => {
   selOpp = n; $("#oppNo").value = ""; renderPChips(); saveDraft();
   $("#lastLog").textContent = `相手 #${n} を選択中`;
 };
+
+/* ---------- video ---------- */
+const vid = $("#vid");
+let vidUrl = null, sceneF = "all";
+const vidTime = () => (vid && vid.src && !isNaN(vid.duration)) ? Math.round(vid.currentTime * 10) / 10 : null;
+const fmtT = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+$("#vidFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  if (vidUrl) URL.revokeObjectURL(vidUrl);
+  vidUrl = URL.createObjectURL(f); vid.src = vidUrl;
+  $("#vidName").textContent = f.name; $("#vidWrap").hidden = false; $("#vStickyWrap").hidden = false;
+  floatVideo(); renderScenes();
+};
+function floatVideo(){
+  const w = $("#vidWrap"), sp = $("#vidSpacer"), on = $("#vSticky").checked && !w.hidden;
+  w.classList.toggle("float", on);
+  const mainEl = document.querySelector("main");
+  if (on) { w.style.top = document.querySelector("header").offsetHeight + "px"; requestAnimationFrame(() => { mainEl.style.paddingTop = (w.offsetHeight + 16) + "px"; }); }
+  else { w.style.top = ""; mainEl.style.paddingTop = ""; }
+}
+$("#vSticky").onchange = floatVideo;
+vid.addEventListener("loadedmetadata", floatVideo);
+window.addEventListener("resize", floatVideo);
+document.querySelector(".vctl").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || !vid.src) return;
+  if (b.dataset.vs) vid.currentTime = Math.max(0, Math.min(vid.duration || 0, vid.currentTime + +b.dataset.vs));
+  else if (b.id === "vPlay") vid.paused ? vid.play().catch(() => {}) : vid.pause();
+  else if (b.id === "vRate") { const r = vid.playbackRate >= 2 ? 1 : vid.playbackRate + 0.5; vid.playbackRate = r; b.textContent = r + "x"; }
+});
+vid.addEventListener("play", () => $("#vPlay").textContent = "停止");
+vid.addEventListener("pause", () => $("#vPlay").textContent = "再生");
+$("#sceneFilter").addEventListener("click", e => {
+  const b = e.target.closest("[data-f]"); if (!b) return;
+  sceneF = b.dataset.f; document.querySelectorAll("#sceneFilter .chip").forEach(c => c.classList.toggle("on", c === b)); renderScenes();
+});
+function evLabel(e){
+  const a = (e.s === "o" ? ACTIONS : OPP_ACTIONS).find(x => x.id === e.a);
+  const nm = a ? a.n.replace("⚽ ", "") : e.a;
+  const who = e.s === "o" ? (() => { const r = roster.find(x => x.id === e.pid); return r ? pLabel(r) : "自チーム"; })() : `相手${e.no ? " #" + e.no : ""}`;
+  return `${who}：${nm}${e.z ? `（${zoneName(e.z)}）` : ""}`;
+}
+function renderScenes(){
+  const el = $("#sceneList"); if (!el) return;
+  const list = events.map((e, i) => ({e, i})).filter(({e}) => e.vt != null).filter(({e}) =>
+    sceneF === "all" || (sceneF === "goal" && e.a === "goal") || (sceneF === "shot" && SHOT.includes(e.a)) || e.s === sceneF);
+  if (!events.some(e => e.vt != null)) { el.innerHTML = `<p class="note" style="margin:0">動画を再生しながら記録すると、ここに場面が並びます。</p>`; return; }
+  el.innerHTML = list.length ? list.sort((a,b) => a.e.vt - b.e.vt).map(({e, i}) => `<div class="scene"><span class="tm">${fmtT(e.vt)}</span><span class="dot" style="background:${e.s === "o" ? "var(--own)" : "var(--opp)"}"></span><span class="tx">${esc(evLabel(e))}</span><button data-seek="${e.vt}">見る</button><button class="x" data-evdel="${i}" aria-label="削除">×</button></div>`).join("")
+    : `<p class="note" style="margin:0">この条件の場面はありません。</p>`;
+}
+$("#sceneList").addEventListener("click", e => {
+  const s = e.target.closest("[data-seek]");
+  if (s) { if (!vid.src) { toast("先に同じ試合の動画を選んでください"); return; } vid.currentTime = Math.max(0, +s.dataset.seek - 4); vid.play().catch(() => {}); if (!$("#vSticky").checked) $("#vidWrap").scrollIntoView({block:"center"}); return; }
+  const d = e.target.closest("[data-evdel]");
+  if (d) confirmTap(d, () => removeEvent(+d.dataset.evdel));
+});
+function removeEvent(i){
+  const ev = events[i]; if (!ev) return;
+  const a = (ev.s === "o" ? ACTIONS : OPP_ACTIONS).find(x => x.id === ev.a);
+  if (a) {
+    bumpTeam(a.t, -1);
+    if (ev.s === "o" && ev.pid && a.p) { const st = pState(ev.pid); for (const [k, v] of Object.entries(a.p)) st.s[k] = Math.max(0, st.s[k] - v); }
+  }
+  events.splice(i, 1);
+  for (let j = undoStack.length - 1; j >= 0; j--) if (undoStack[j].ev === ev) undoStack.splice(j, 1);
+  $("#undoBtn").disabled = !undoStack.length;
+  renderPChips(); renderPtbl(); renderScenes(); saveDraft(); toast("記録を削除しました");
+}
 
 /* match clock */
 const clockMs = () => clock.acc + (clock.start ? Date.now() - clock.start : 0);
@@ -855,7 +959,7 @@ function writeForm(m){
   if (added) saveRoster();
   events = (m.events || []).slice(); oppNos = (m.oppNos || []).slice(); selOpp = null; selZone = null; side = "o";
   clock = {acc:0, start:null, half:1, h2:0, ...(m.clock || {})};
-  renderRoster(); renderClock();
+  renderRoster(); renderClock(); renderScenes();
 }
 let draftTimer;
 function saveDraft(){ clearTimeout(draftTimer); draftTimer = setTimeout(() => store.set("sma_draft", readForm()), 300); }
@@ -1059,6 +1163,50 @@ function nextPlan(m, A){
   A.weak.slice(0,3).forEach(w => { if (w.drill) items.push({t:`改善：${w.title}`, d:w.detail.replace(/<[^>]+>/g,""), drill:w.drill}); });
   if (m.gf < m.ga && m.o.poss < 45) items.push({t:"試合運び：奪った後の最初のパス", d:"押し込まれる展開では、奪った直後の1本目を前へ。前線は奪った瞬間に裏・サイドへ走る約束を。"});
   return items;
+}
+
+/* ---------- position activity ---------- */
+const ATK_K = ["shot","keyP","drib","cross","assist"], DEF_K = ["tklA","intc","save"];
+function heatPitch(title, map, col){
+  const mx = Math.max(1, ...Object.values(map));
+  return `<div><div class="t">${title}</div><div class="pitch"><span class="ln half"></span><span class="ln circ" style="width:26px;height:26px"></span><span class="ln boxT"></span><span class="ln boxB"></span>
+    <div class="pgrid">${["A","M","D"].flatMap(r => ["L","C","R"].map(c => r + c)).map(k => `<div class="hc" style="background:${map[k] ? hexAlpha(col, .25 + .65 * map[k] / mx) : "transparent"}">${map[k] || ""}</div>`).join("")}</div></div></div>`;
+}
+function playerHeat(m, pid){
+  const cells = ["A","M","D"].flatMap(r => ["L","C","R"].map(c => r + c));
+  const ev = (m.events || []).filter(e => e.s === "o" && e.pid === pid && rowOf(e.z));
+  const f = fn => Object.fromEntries(cells.map(k => [k, ev.filter(e => e.z === k && fn(e)).length]));
+  return `<div class="heat">${heatPitch("攻撃", f(e => ATK_O.includes(e.a)), css("--own"))}${heatPitch("守備", f(e => ["tklW","intc","save"].includes(e.a)), css("--good"))}${heatPitch("ロスト", f(e => e.a === "lost"), css("--bad"))}</div>`;
+}
+function positionHTML(m){
+  const ps = (m.players || []).map(p => ({...p, s:{...blankS(), ...p.s}}));
+  if (!ps.length) return "";
+  const groups = ["GK","DF","MF","FW","未定"].map(pos => {
+    const g = ps.filter(p => (p.pos || "未定") === pos); if (!g.length) return null;
+    const sum = ks => g.reduce((t, p) => t + ks.reduce((u, k) => u + (p.s[k] || 0), 0), 0);
+    const atk = sum(ATK_K), def = sum(DEF_K), lost = sum(["lost"]);
+    return {pos, n:g.length, atk, def, lost, aA: atk / g.length, aD: def / g.length, aL: lost / g.length};
+  }).filter(Boolean);
+  const mx = Math.max(1, ...groups.flatMap(g => [g.aA, g.aD, g.aL]));
+  const bar = (lbl, v, col) => `<div class="bl"><span>${lbl}</span><div class="b" style="width:${Math.max(1, v / mx * 75)}%;background:${col}"></div><span>${v.toFixed(1)}</span></div>`;
+  const notes = [];
+  const G = k => groups.find(g => g.pos === k);
+  if (G("FW") && G("FW").aD < 1 && groups.length > 1) notes.push(`FWの守備のプレーが少ない（1人あたり${G("FW").aD.toFixed(1)}回）→ 前からのプレスで、相手のビルドアップを遅らせる役目も意識`);
+  if (G("DF") && G("DF").aA >= 2) notes.push(`DFの攻撃参加が多い（1人あたり${G("DF").aA.toFixed(1)}回）→ 攻撃参加は武器。上がったときの後ろのカバーを決めておく`);
+  if (G("DF") && G("DF").aL >= 3) notes.push(`DFのロストが多い（1人あたり${G("DF").aL.toFixed(1)}回）→ 後ろでは無理につながず、安全第一`);
+  if (G("MF") && G("MF").aA + G("MF").aD < 2 && groups.length > 1) notes.push(`MFの関わりが少ない（1人あたり攻守${(G("MF").aA + G("MF").aD).toFixed(1)}回）→ ボールに関わる回数を増やす（サポートの位置取り）`);
+  if (G("FW") && G("FW").aA < 1.5 && groups.length > 1) notes.push(`FWの攻撃のプレーが少ない（1人あたり${G("FW").aA.toFixed(1)}回）→ FWにボールが入っていない。くさびのパスと裏への動き出しを増やす`);
+  if (G("未定")) notes.push("ポジションが「未定」の選手がいます。「選手の登録・編集」でポジションを設定すると、比べやすくなります");
+  const withZ = ps.filter(p => (m.events || []).some(e => e.s === "o" && e.pid === p.id && rowOf(e.z)));
+  return `<div class="card"><h2>ポジション別の活動量 <span class="tag">1人あたりのプレー回数</span></h2>
+    <div class="legend"><span><i style="background:var(--own)"></i>攻撃（シュート・キーパス・突破・クロス）</span><span><i style="background:var(--good)"></i>守備（タックル・パスカット・セーブ）</span><span><i style="background:var(--bad)"></i>ロスト</span></div>
+    ${groups.map(g => `<div class="posrow"><div class="pn">${g.pos}<div style="font-size:10.5px;color:var(--muted);font-weight:700">${g.n}人</div></div><div class="bars">${bar("攻撃", g.aA, css("--own"))}${bar("守備", g.aD, css("--good"))}${bar("ロスト", g.aL, css("--bad"))}</div></div>`).join("")}
+    ${notes.length ? `<div style="margin-top:6px">${notes.map(t => `<div class="item"><div class="ic warn">→</div><div><p style="color:var(--text);margin:0">${t}</p></div></div>`).join("")}</div>` : ""}
+    <details style="margin-top:6px"><summary>数値で見る</summary><table class="tbl"><tr><th>ポジション</th><th>人数</th><th>攻撃</th><th>守備</th><th>ロスト</th></tr>${groups.map(g => `<tr><td>${g.pos}</td><td>${g.n}</td><td>${g.atk}</td><td>${g.def}</td><td>${g.lost}</td></tr>`).join("")}</table></details>
+    <h3 style="font-size:14px;margin:16px 0 6px">選手ごとのプレー場所</h3>
+    ${withZ.length ? `<select id="posPlayerSel" style="margin-bottom:10px">${withZ.map(p => `<option value="${esc(p.id)}">${esc(pLabel(p))}（${p.pos}）</option>`).join("")}</select><div id="posHeat">${playerHeat(m, withZ[0].id)}</div><p class="note">上が相手ゴール側。色が濃いほど、その場所でのプレーが多い。</p>`
+      : `<p class="note" style="margin:0">プレー記録でコート図の場所を選んでから選手のプレーを記録すると、選手ごとのプレー場所が出ます。</p>`}
+  </div>`;
 }
 
 /* ---------- players section ---------- */
@@ -1332,6 +1480,7 @@ function renderAnalysis(m){
     </div>
 
     ${playersHTML(m)}
+    ${positionHTML(m)}
     ${zoneCardHTML(m)}
 
     <div class="card">
@@ -1360,6 +1509,7 @@ function renderAnalysis(m){
         pointLabels:{color:txt, font:{family:"Noto Sans JP", size:12, weight:"700"}}}}}
   }));
 
+  const pSel = $("#posPlayerSel"); if (pSel) pSel.onchange = () => { $("#posHeat").innerHTML = playerHeat(m, pSel.value); };
   $("#copyBtn").onclick = async () => {
     const txtOut = [`【試合レポート】${m.date||""} ${m.comp||""}`, `${m.ownName} ${m.gf}-${m.ga} ${m.oppName}（内容評価 ${G.g}）`, "",
       ...report.map(p => p.replace(/<[^>]+>/g,"")), "",
@@ -1483,6 +1633,8 @@ $("#historyBody").addEventListener("click", e => {
 function go(tab){
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "v-" + tab));
+  const mainEl = document.querySelector("main");
+  if (tab !== "input") mainEl.style.paddingTop = ""; else if (typeof floatVideo === "function") setTimeout(floatVideo, 0);
   $(".actions").style.display = tab === "input" ? "" : "none";
   if (tab === "history") renderHistory();
   if (tab === "live") renderLive();
