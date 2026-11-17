@@ -103,12 +103,12 @@ main{padding:14px;max-width:640px;margin:0 auto}
   display:flex;align-items:center;gap:6px}
 .fab:active{transform:scale(.96)}
 /* sheet */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:50;align-items:flex-end;justify-content:center}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:50;align-items:flex-end;justify-content:center;padding-top:calc(env(safe-area-inset-top) + 10px);overscroll-behavior:contain}
 .overlay.on{display:flex}
-.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border-radius:20px 20px 0 0;
   padding:0 16px calc(20px + env(safe-area-inset-bottom));animation:up .22s ease-out}
 @keyframes up{from{transform:translateY(40px);opacity:.4}}
-.sheet-h{position:sticky;top:0;background:var(--bg);padding:14px 0 10px;display:flex;align-items:center;justify-content:space-between;z-index:2}
+.sheet-h{position:sticky;top:0;background:var(--bg);padding:16px 0 10px;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;z-index:2}
 .sheet-h h2{font-size:17px}
 .x{background:none;border:0;font-size:26px;color:var(--sub);cursor:pointer;line-height:1;padding:4px 8px}
 .fg{margin-bottom:12px}
@@ -488,8 +488,8 @@ function sysTable(list,key="sys",title="システム別成績（FC.K）",note="�
   }</tbody></table><p style="font-size:11px;color:var(--sub);margin-top:6px">得/失は1試合平均。${note}</p></div>`;
 }
 /* ---------- sheet ---------- */
-function openSheet(html){$("#sheet").innerHTML=html;$("#ov").classList.add("on");$("#sheet").scrollTop=0}
-function closeSheet(){$("#ov").classList.remove("on")}
+function openSheet(html){document.body.style.overflow="hidden";$("#sheet").innerHTML=html;$("#ov").classList.add("on");$("#sheet").scrollTop=0}
+function closeSheet(){document.body.style.overflow="";$("#ov").classList.remove("on")}
 $("#ov").addEventListener("click",e=>{if(e.target.id==="ov")closeSheet()});
 
 function openDetail(id){
