@@ -283,7 +283,7 @@ function attach(){
   const u1=resCol().onSnapshot(q=>{
     matches=q.docs.map(d=>({...d.data(),id:d.id}));saveLocal();cloud.err="";render();updateNotice();if(!q.metadata.fromCache)pushView();
   },e=>{console.log(e);cloud.err="チームの記録を読めませんでした（Firestoreのルールで results が許可されているか確認してください）";updateNotice()});
-  const u2=teamRef().onSnapshot(d=>{if(d.exists){cloud.teamName=d.data().name||"";cloud.viewCode=d.data().viewCode||null;cloud.showMemo=!!d.data().showMemo;updateNotice();pushView()}},()=>{});
+  const u2=teamRef().onSnapshot(d=>{if(d.exists){cloud.teamName=d.data().name||"";cloud.viewCode=d.data().viewCode||null;cloud.showMemo=d.data().showMemo!==false;updateNotice();pushView()}},()=>{});
   cloud.unsub=()=>{u1();u2()};
 }
 /* ---------- 選手用の閲覧リンク ---------- */
