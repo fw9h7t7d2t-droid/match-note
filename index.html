@@ -172,6 +172,11 @@ input[type=text],input[type=date],select{width:100%;font:inherit;padding:10px 12
 .codebox{font-size:22px;font-weight:900;letter-spacing:.08em;text-align:center;background:var(--surface-2);border-radius:10px;padding:10px;margin:8px 0;font-variant-numeric:tabular-nums}
 .cloud-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
 .cloud-dot.on{background:var(--good)}
+.halves{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.halfrow{display:grid;grid-template-columns:40px 1fr 14px 1fr;gap:6px;align-items:center}
+.halfrow .hl2{font-size:13px;font-weight:700;color:var(--text-2)}
+.halfrow .dash2{text-align:center;color:var(--muted);font-weight:900}
+.halfrow .step button{width:36px;height:36px}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--surface);padding:10px 18px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;z-index:20}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .note{font-size:12px;color:var(--muted);margin-top:8px}
@@ -333,10 +338,15 @@ table.ptbl input[type=checkbox]{width:18px;height:18px}
   <div class="card">
     <h2>スコア</h2>
     <div class="scorebox">
-      <div><div class="team" id="lblOwn">自チーム</div><div class="step big"><button data-k="gf" data-d="-1">−</button><input type="number" id="gf" value="0" min="0" inputmode="numeric"><button data-k="gf" data-d="1">＋</button></div></div>
+      <div><div class="team" id="lblOwn">自チーム</div><div class="step big"><button data-k="gf" data-d="-1">−</button><input type="number" id="gf" value="0" min="0" readonly><button data-k="gf" data-d="1">＋</button></div></div>
       <div class="dash">-</div>
-      <div><div class="team" id="lblOpp">相手</div><div class="step big"><button data-k="ga" data-d="-1">−</button><input type="number" id="ga" value="0" min="0" inputmode="numeric"><button data-k="ga" data-d="1">＋</button></div></div>
+      <div><div class="team" id="lblOpp">相手</div><div class="step big"><button data-k="ga" data-d="-1">−</button><input type="number" id="ga" value="0" min="0" readonly><button data-k="ga" data-d="1">＋</button></div></div>
     </div>
+    <div class="halves">
+      <div class="halfrow"><span class="hl2">前半</span><div class="step"><button data-k="gf1" data-d="-1">−</button><input type="number" id="gf1" value="0" min="0" inputmode="numeric"><button data-k="gf1" data-d="1">＋</button></div><span class="dash2">-</span><div class="step"><button data-k="ga1" data-d="-1">−</button><input type="number" id="ga1" value="0" min="0" inputmode="numeric"><button data-k="ga1" data-d="1">＋</button></div></div>
+      <div class="halfrow"><span class="hl2">後半</span><div class="step"><button data-k="gf2" data-d="-1">−</button><input type="number" id="gf2" value="0" min="0" inputmode="numeric"><button data-k="gf2" data-d="1">＋</button></div><span class="dash2">-</span><div class="step"><button data-k="ga2" data-d="-1">−</button><input type="number" id="ga2" value="0" min="0" inputmode="numeric"><button data-k="ga2" data-d="1">＋</button></div></div>
+    </div>
+    <p class="note">大きい＋−は、試合時計の今のハーフ（<span id="curHalfLbl">前半</span>）に入ります。ゴール・失点をプレー記録でタップしたときも、自動で前半・後半に振り分けます。</p>
   </div>
 
   <div class="card">
@@ -644,8 +654,16 @@ $("#pchips").addEventListener("click", e => {
   $("#lastLog").textContent = r ? `${pLabel(r)} を選択中` : "選手を選んでください";
   renderPChips();
 });
-function bumpTeam(t, sign){
-  for (const [k, v] of Object.entries(t)) { const el = document.getElementById(k); if (el) el.value = Math.max(0, (+el.value||0) + v*sign); }
+function bumpTeam(t, sign, h){
+  for (const [k0, v] of Object.entries(t)) {
+    const k = (k0 === "gf" || k0 === "ga") ? k0 + (h || clock.half || 1) : k0;
+    const el = document.getElementById(k); if (el) el.value = Math.max(0, (+el.value||0) + v*sign);
+  }
+  updTotals();
+}
+function updTotals(){
+  const g = id => +document.getElementById(id).value || 0;
+  $("#gf").value = g("gf1") + g("gf2"); $("#ga").value = g("ga1") + g("ga2");
 }
 $("#acts").addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b || !selP) return;
@@ -679,13 +697,13 @@ $("#undoBtn").onclick = () => {
   const u = undoStack.pop(); if (!u) return;
   if (u.ev) dropEvent(u.ev);
   if (u.opp) {
-    bumpTeam(u.a.t, -1);
+    bumpTeam(u.a.t, -1, u.ev && u.ev.h);
     $("#lastLog").textContent = `取り消し：相手 ${u.a.n.replace("⚽ ","")}`;
     $("#undoBtn").disabled = !undoStack.length; saveDraft(); renderScenes(); return;
   }
   const st = pState(u.pid), r = roster.find(x => x.id === u.pid);
   for (const [k, v] of Object.entries(u.a.p)) st.s[k] = Math.max(0, st.s[k] - v);
-  bumpTeam(u.a.t, -1);
+  bumpTeam(u.a.t, -1, u.ev && u.ev.h);
   $("#lastLog").textContent = `取り消し：${r?pLabel(r):""} ${u.a.n.replace("⚽ ","")}`;
   $("#undoBtn").disabled = !undoStack.length;
   renderPChips(); renderPtbl(); saveDraft(); renderScenes();
@@ -819,7 +837,7 @@ function removeEvent(i){
   const ev = events[i]; if (!ev) return;
   const a = (ev.s === "o" ? ACTIONS : OPP_ACTIONS).find(x => x.id === ev.a);
   if (a) {
-    bumpTeam(a.t, -1);
+    bumpTeam(a.t, -1, ev.h);
     if (ev.s === "o" && ev.pid && a.p) { const st = pState(ev.pid); for (const [k, v] of Object.entries(a.p)) st.s[k] = Math.max(0, st.s[k] - v); }
   }
   events.splice(i, 1);
@@ -839,6 +857,7 @@ function clockLabel(){
   return `⏱ ${clock.half === 2 ? "後半" : "前半"} ${mm}:${String(ss).padStart(2,"0")}${clock.start ? "" : "（停止中）"}`;
 }
 function renderClock(){
+  const chl = $("#curHalfLbl"); if (chl) chl.textContent = clock.half === 2 ? "後半" : "前半";
   document.querySelectorAll(".clockTxt").forEach(el => el.textContent = clockLabel());
   document.querySelectorAll(".clockToggle").forEach(b => b.textContent = clock.start ? "⏸ 止める" : (clockUsed() ? "▶ 再開" : "▶ 開始"));
   document.querySelectorAll(".clockHalf").forEach(b => { b.hidden = clock.half === 2; });
@@ -868,7 +887,9 @@ $("#syncBtn").onclick = () => {
   if (!ps.length) { toast("出場選手の記録がありません"); return; }
   const sum = k => ps.reduce((s,x) => s + (x.s[k]||0), 0);
   const map = {gf:"goal", o_shots:"shot", o_sot:"sot", o_assist:"assist", o_keyP:"keyP", o_tklA:"tklA", o_tklW:"tklW", o_intc:"intc", o_lost:"lost", o_foul:"foul", o_yc:"yc", o_save:"save"};
-  for (const [id, k] of Object.entries(map)) document.getElementById(id).value = sum(k);
+  for (const [id, k] of Object.entries(map)) if (id !== "gf") document.getElementById(id).value = sum(k);
+  const goals = sum("goal"), g2 = Math.min(goals, events.filter(e => e.s === "o" && e.a === "goal" && e.h === 2).length);
+  $("#gf1").value = goals - g2; $("#gf2").value = g2; updTotals();
   saveDraft(); toast("チームスタッツに反映しました");
 };
 $("#rAdd").onclick = () => {
@@ -960,13 +981,15 @@ document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () =
 document.addEventListener("click", e => {
   const b = e.target.closest(".step button");
   if (!b) return;
-  const inp = document.getElementById(b.dataset.k);
+  const key = (b.dataset.k === "gf" || b.dataset.k === "ga") ? b.dataset.k + clock.half : b.dataset.k;
+  const inp = document.getElementById(key);
   let v = (parseInt(inp.value) || 0) + parseInt(b.dataset.d);
   v = Math.max(0, v); if (inp.max) v = Math.min(+inp.max, v);
   inp.value = v; inp.dispatchEvent(new Event("input", {bubbles:true}));
 });
 document.addEventListener("input", e => {
   if (["o_poss","o_passA","p_passA","possAuto"].includes(e.target.id)) updPoss();
+  if (["gf1","gf2","ga1","ga2"].includes(e.target.id)) updTotals();
   if (e.target.id === "ownName") $("#lblOwn").textContent = e.target.value || "自チーム";
   if (e.target.id === "oppName") $("#lblOpp").textContent = e.target.value || "相手";
   saveDraft();
@@ -980,7 +1003,8 @@ function readForm(){
     date: $("#date").value, comp: $("#comp").value.trim(),
     ownName: $("#ownName").value.trim() || "自チーム", oppName: $("#oppName").value.trim() || "相手",
     ownSys: $("#ownSys").value, oppSys: $("#oppSys").value,
-    gf: +$("#gf").value||0, ga: +$("#ga").value||0,
+    gf1: +$("#gf1").value||0, gf2: +$("#gf2").value||0, ga1: +$("#ga1").value||0, ga2: +$("#ga2").value||0,
+    gf: (+$("#gf1").value||0) + (+$("#gf2").value||0), ga: (+$("#ga1").value||0) + (+$("#ga2").value||0),
     o:{}, p:{},
     possAuto: $("#possAuto").checked,
     gfPat: [...document.querySelectorAll('.chip.on[data-g="gf"]')].map(c => c.dataset.v),
@@ -1001,7 +1025,10 @@ function writeForm(m){
   $("#date").value = m.date || ""; $("#comp").value = m.comp || "";
   $("#ownName").value = m.ownName === "自チーム" ? "" : (m.ownName||""); $("#oppName").value = m.oppName === "相手" ? "" : (m.oppName||"");
   $("#ownSys").value = m.ownSys || "4-4-2"; $("#oppSys").value = m.oppSys || "4-3-3";
-  $("#gf").value = m.gf||0; $("#ga").value = m.ga||0;
+  const hasH = m.gf1 != null;
+  $("#gf1").value = hasH ? m.gf1 : (m.gf||0); $("#gf2").value = hasH ? (m.gf2||0) : 0;
+  $("#ga1").value = hasH ? m.ga1 : (m.ga||0); $("#ga2").value = hasH ? (m.ga2||0) : 0;
+  updTotals();
   STATS.forEach(st => {
     document.getElementById("o_"+st.k).value = m.o?.[st.k] ?? (st.pct?50:0);
     if (!st.pct) document.getElementById("p_"+st.k).value = m.p?.[st.k] ?? 0;
@@ -1028,7 +1055,7 @@ function saveDraft(){ clearTimeout(draftTimer); draftTimer = setTimeout(() => st
 
 const SAMPLE = {
   date: new Date().toISOString().slice(0,10), comp:"練習試合", ownName:"", oppName:"FCブルー",
-  ownSys:"4-4-2", oppSys:"4-3-3", gf:1, ga:2,
+  ownSys:"4-4-2", oppSys:"4-3-3", gf:1, ga:2, gf1:1, ga1:1, gf2:0, ga2:1,
   o:{poss:56,shots:14,sot:4,passA:380,passC:255,assist:1,keyP:6,cross:18,tklA:22,tklW:10,intc:9,lost:48,foul:15,yc:2,ck:7,off:5,save:3},
   p:{shots:9,sot:5,passA:300,passC:228,assist:2,keyP:7,cross:6,tklA:20,tklW:13,intc:14,lost:35,foul:8,yc:0,ck:3,off:1,save:3},
   gfPat:["セットプレー"], gaPat:["カウンター","ミス絡み"],
@@ -1061,6 +1088,9 @@ $("#sampleBtn").onclick = () => {
   writeForm(sm); saveDraft(); toast("サンプルを入力しました");
 };
 $("#resetBtn").onclick = () => { writeForm({date:new Date().toISOString().slice(0,10), o:{}, p:{}, gfPat:[], gaPat:[]}); saveDraft(); toast("クリアしました"); };
+
+const hasHalves = m => m.gf1 != null && (m.gf1 + m.gf2 + m.ga1 + m.ga2) > 0;
+const halfTxt = m => hasHalves(m) ? `前半 ${m.gf1}-${m.ga1} ／ 後半 ${m.gf2}-${m.ga2}` : "";
 
 /* ---------- analysis engine ---------- */
 function metrics(t, gf, ga, opp){
@@ -1144,6 +1174,13 @@ function analyze(m){
     "PK":["PKで失点", "ペナルティエリア内での不用意な接触。", {name:"エリア内の守備", how:"エリア内では足を出さず、体を寄せてコースを切る。"}]
   };
   m.gaPat.forEach(pt => { const g = GA[pt]; if (g) add(weak, 2, "ga_"+pt, g[0], g[1], g[2]); });
+  if (hasHalves(m)) {
+    if (m.ga2 - m.ga1 >= 2) add(weak, 2, "h2", "後半の失点が多い", `前半 <span class="num">${m.ga1}失点</span> → 後半 <span class="num">${m.ga2}失点</span>。後半に足が止まる・集中が切れる・相手の修正に対応できていない可能性。`,
+      {name:"疲れた状態でのゲーム（走った直後の5対5）", how:"ダッシュ後すぐにゲームを行い、疲れた中での判断・声かけを練習。交代のタイミングも事前に決めておく。"});
+    if (m.ga1 - m.ga2 >= 2) add(weak, 2, "h1", "前半（立ち上がり）の失点が多い", `前半 <span class="num">${m.ga1}失点</span> → 後半 <span class="num">${m.ga2}失点</span>。試合の入りで相手に合わせられていない。`,
+      {name:"試合前のアップを実戦形式に", how:"アップの最後に本番と同じ強度の対人・ゲームを入れて、キックオフから全開で入れるようにする。"});
+    if (m.gf2 - m.gf1 >= 2) add(strong, 0, "", "後半に得点を重ねた", `前半${m.gf1}点 → 後半${m.gf2}点`);
+  }
 
   // ---- strengths
   if (O.passAcc >= 78) add(strong, 0, "", "パスがよくつながっている", `パス成功率 ${r0(O.passAcc)}%`);
@@ -1194,8 +1231,13 @@ function writeReport(m, A, R){
   const o = m.o, p = m.p, O = A.O, P = A.P;
   const res = m.gf > m.ga ? "勝利" : m.gf < m.ga ? "敗戦" : "引き分け";
   const paras = [];
-  paras.push(`${m.oppName}（${m.oppSys}）との一戦は <b>${m.gf}-${m.ga}で${res}</b>。支配率は${o.poss}%、シュートは${o.shots}本（枠内${o.sot}）に対し相手は${p.shots}本（枠内${p.sot}）でした。`);
+  paras.push(`${m.oppName}（${m.oppSys}）との一戦は <b>${m.gf}-${m.ga}で${res}</b>${hasHalves(m) ? `（前半${m.gf1}-${m.ga1}、後半${m.gf2}-${m.ga2}）` : ""}。支配率は${o.poss}%、シュートは${o.shots}本（枠内${o.sot}）に対し相手は${p.shots}本（枠内${p.sot}）でした。`);
 
+  if (hasHalves(m)) {
+    const d1 = m.gf1 - m.ga1, d2 = m.gf2 - m.ga2;
+    if (d2 - d1 >= 2) paras.push(`後半に盛り返しました（前半${m.gf1}-${m.ga1} → 後半${m.gf2}-${m.ga2}）。ハーフタイムの修正が効いた形で、前半の入りから同じ戦い方ができれば結果は変わります。`);
+    else if (d1 - d2 >= 2) paras.push(`後半に崩れました（前半${m.gf1}-${m.ga1} → 後半${m.gf2}-${m.ga2}）。体力・集中力の低下や、相手の修正への対応が課題です。`);
+  }
   // biggest gaps
   const labels = ["攻撃量","決定力","パス精度","チャンス創出","守備・奪回","規律","支配"];
   const gaps = R.own.map((v,i) => ({l:labels[i], d:v - R.opp[i]}));
@@ -1422,6 +1464,7 @@ function renderLive(){
     <div class="card live-top">
       <div class="ct clockTxt">${clockLabel()}</div>
       <div class="sc">${esc(m.ownName)} ${m.gf} - ${m.ga} ${esc(m.oppName)}</div>
+      ${hasHalves(m) ? `<div style="font-size:12px;color:var(--text-2);margin:-8px 0 10px">${halfTxt(m)}</div>` : ""}
       <div class="row-btns"><button class="btn ghost small clockToggle"></button><button class="btn ghost small clockHalf">後半へ</button><button class="btn ghost small" id="liveRefresh">↻ 更新</button></div>
       <div class="qs">
         <div><span>支配率</span><b><span class="o">${m.o.poss}</span>-<span class="p">${m.p.poss}</span></b></div>
@@ -1493,6 +1536,7 @@ function renderAnalysis(m){
     <div class="result-hero">
       <div class="meta">${esc(m.date || "")} ${esc(m.comp || "")}</div>
       <div class="names"><span>${esc(m.ownName)}</span><span class="sc">${m.gf} - ${m.ga}</span><span>${esc(m.oppName)}</span></div>
+      ${hasHalves(m) ? `<div class="meta" style="font-size:13px;opacity:.95;margin-bottom:2px">${halfTxt(m)}</div>` : ""}
       <div class="meta">${esc(m.ownSys)} vs ${esc(m.oppSys)}</div>
       <div style="margin-top:8px"><span class="badge">${res}</span></div>
       <div class="grade">内容評価 <b>${G.g}</b>（${G.s}点）</div>
@@ -1573,7 +1617,7 @@ function renderAnalysis(m){
 
   const pSel = $("#posPlayerSel"); if (pSel) pSel.onchange = () => { $("#posHeat").innerHTML = playerHeat(m, pSel.value); };
   $("#copyBtn").onclick = async () => {
-    const txtOut = [`【試合レポート】${m.date||""} ${m.comp||""}`, `${m.ownName} ${m.gf}-${m.ga} ${m.oppName}（内容評価 ${G.g}）`, "",
+    const txtOut = [`【試合レポート】${m.date||""} ${m.comp||""}`, `${m.ownName} ${m.gf}-${m.ga} ${m.oppName}（内容評価 ${G.g}）`, ...(hasHalves(m) ? [halfTxt(m)] : []), "",
       ...report.map(p => p.replace(/<[^>]+>/g,"")), "",
       ...(() => { const rp = ratedPlayers(m); if (!rp.length) return [];
         const sc = rp.filter(p => p.s.goal).map(p => p.name + (p.s.goal>1?`(${p.s.goal})`:"")).join("、");
@@ -1627,7 +1671,7 @@ function renderHistory(){
         : `<p style="margin:0;color:var(--text-2)">繰り返し出ている課題はありません。</p>`}
     </div>
     <div class="card"><h2>試合一覧</h2>
-      ${h.map(x => { const r = x.gf>x.ga?"W":x.gf<x.ga?"L":"D"; return `<div class="hist-item" data-id="${x.id}"><div class="wdl ${r}">${r==="W"?"勝":r==="L"?"敗":"分"}</div><div class="t"><b>vs ${esc(x.oppName)}　${x.gf}-${x.ga}</b><span>${esc(x.date||"")} ${esc(x.comp||"")} ・ ${esc(x.oppSys)}</span></div><button class="del" data-del="${x.id}" aria-label="削除">×</button></div>`; }).join("")}
+      ${h.map(x => { const r = x.gf>x.ga?"W":x.gf<x.ga?"L":"D"; return `<div class="hist-item" data-id="${x.id}"><div class="wdl ${r}">${r==="W"?"勝":r==="L"?"敗":"分"}</div><div class="t"><b>vs ${esc(x.oppName)}　${x.gf}-${x.ga}${hasHalves(x) ? `<span style="font-weight:500;font-size:12px;color:var(--text-2)">（${x.gf1}-${x.ga1} / ${x.gf2}-${x.ga2}）</span>` : ""}</b><span>${esc(x.date||"")} ${esc(x.comp||"")} ・ ${esc(x.oppSys)}</span></div><button class="del" data-del="${x.id}" aria-label="削除">×</button></div>`; }).join("")}
       <p class="note">タップで分析を再表示。記録はこの端末のブラウザに保存されます。</p>
     </div>`;
 
